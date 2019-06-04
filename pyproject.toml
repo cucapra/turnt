@@ -1,0 +1,15 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "turnt"
+author = "Adrian Sampson"
+author-email = "asampson@cs.cornell.edu"
+requires = [
+    "click",
+    "tomlkit",
+]
+
+[tool.flit.scripts]
+turnt = "turnt:turnt"
