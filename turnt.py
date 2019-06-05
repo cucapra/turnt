@@ -50,25 +50,41 @@ def run_test(path, idx, save, diff, tap, verbose):
     out_path = get_out_file(config, path)
 
     # Run the command.
-    with tempfile.NamedTemporaryFile(delete=False) as temp:
-        subprocess.run(
+    with tempfile.NamedTemporaryFile(delete=False) as out, \
+        tempfile.NamedTemporaryFile(delete=False) as err:
+        completed = subprocess.run(
             cmd,
-            stdout=temp,
-            stderr=None if verbose else subprocess.DEVNULL,
+            stdout=out,
+            stderr=err,
             cwd=os.path.abspath(os.path.dirname(path)),
         )
 
     try:
+        # If the command has a non-zero exit code, fail.
+        if completed.returncode != 0:
+            with open(err.name) as f:
+                cmd_err = f.read()
+                print('not ok - error code {}'.format(completed.returncode))
+                print(cmd_err, file=sys.stderr)
+                return False
+
+        # Output error, if requested.
+        if verbose:
+            with open(err.name) as f:
+                cmd_err = f.read()
+                if cmd_err:
+                    print(cmd_err, file=sys.stderr)
+
         # Diff the actual & expected output.
         if diff:
-            subprocess.run(['diff', '--new-file', out_path, temp.name])
+            subprocess.run(['diff', '--new-file', out_path, out.name])
 
         # Save the new output, if requested.
         if save:
-            shutil.copy(temp.name, out_path)
+            shutil.copy(out.name, out_path)
 
         # Check whether output matches & summarize.
-        with open(temp.name) as f:
+        with open(out.name) as f:
             actual = f.read()
         if os.path.isfile(out_path):
             with open(out_path) as f:
@@ -85,7 +101,8 @@ def run_test(path, idx, save, diff, tap, verbose):
             ))
 
     finally:
-        os.unlink(temp.name)
+        os.unlink(out.name)
+        os.unlink(err.name)
 
     return success
 
