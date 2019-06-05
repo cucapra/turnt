@@ -91,8 +91,10 @@ def run_test(path, idx, save, diff, tap, verbose):
         if completed.returncode != 0:
             with open(err.name) as f:
                 cmd_err = f.read()
-                print('not ok - error code {}'.format(completed.returncode))
-                print(cmd_err, file=sys.stderr)
+                if tap:
+                    print('not ok {} - {}'.format(idx, path))
+                    print('# exit code: {}'.format(completed.returncode))
+                sys.stderr.write(cmd_err)
                 return False
 
         # Output error, if requested.
