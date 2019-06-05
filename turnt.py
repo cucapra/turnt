@@ -108,10 +108,6 @@ def run_test(path, idx, save, diff, tap, verbose):
         if diff:
             subprocess.run(['diff', '--new-file', out_path, out.name])
 
-        # Save the new output, if requested.
-        if save:
-            shutil.copy(out.name, out_path)
-
         # Check whether output matches & summarize.
         with open(out.name) as f:
             actual = f.read()
@@ -122,12 +118,20 @@ def run_test(path, idx, save, diff, tap, verbose):
             expected = None
         success = actual == expected
 
+        # Save the new output, if requested.
+        update = save and not success
+        if update:
+            shutil.copy(out.name, out_path)
+
         if tap:
-            print('{} {} - {}'.format(
+            line = '{} {} - {}'.format(
                 'ok' if success else 'not ok',
                 idx,
                 path,
-            ))
+            )
+            if update:
+                line += ' # skip: updated {}'.format(out_path)
+            print(line)
 
     finally:
         os.unlink(out.name)
