@@ -52,7 +52,7 @@ def run_test(path, idx, save, diff, tap, verbose):
 
     # Run the command.
     with tempfile.NamedTemporaryFile(delete=False) as out, \
-        tempfile.NamedTemporaryFile(delete=False) as err:
+            tempfile.NamedTemporaryFile(delete=False) as err:
         completed = subprocess.run(
             cmd,
             shell=True,
