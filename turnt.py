@@ -25,7 +25,7 @@ def load_config(path):
         with open(config_path) as f:
             return tomlkit.loads(f.read())
     else:
-        return None
+        return {}
 
 
 def extract_option(text, key):
