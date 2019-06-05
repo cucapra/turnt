@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import shutil
 import sys
+import re
 
 __version__ = '0.0.1'
 
@@ -27,12 +28,34 @@ def load_config(path):
         return None
 
 
+def extract_option(text, key):
+    """Parse a config option from the given text.
+
+    Options are embedded in declarations like "KEY: value" that may
+    occur anywhere in the file. We take all the text after "KEY: " until
+    the end of the line. Return the value string or None if the
+    declaration was not found.
+    """
+    regex = r'\b{}:\s+(.*)'.format(key.upper())
+    match = re.search(regex, text)
+    if match:
+        return match.group(1)
+    else:
+        return None
+
+
 def get_command(config, path):
     """Get the shell command to run for a given test, as a string.
     """
+    # Parse options from the test file.
+    with open(path) as f:
+        contents = f.read()
+    cmd = extract_option(contents, 'cmd') or config['command']
+
+    # Construct the command.
     filename = os.path.basename(path)
     base, _ = os.path.splitext(filename)
-    return config['command'].format(
+    return cmd.format(
         filename=shlex.quote(filename),
         base=shlex.quote(base),
     )
