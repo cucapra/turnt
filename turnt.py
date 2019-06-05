@@ -27,22 +27,30 @@ def load_config(path):
     else:
         return {}
 
-
-def extract_option(text, key):
-    """Parse a config option from the given text.
+def extract_options(text, key):
+    """Parse a config option(s) from the given text.
 
     Options are embedded in declarations like "KEY: value" that may
     occur anywhere in the file. We take all the text after "KEY: " until
-    the end of the line. Return the value string or None if the
+    the end of the line. Return the value strings as a list or None if the
     declaration was not found.
     """
     regex = r'\b{}:\s+(.*)'.format(key.upper())
-    match = re.search(regex, text)
-    if match:
-        return match.group(1)
+    matches = re.findall(regex, text)
+    if matches:
+        return matches
     else:
         return None
 
+
+def extract_option(text, key):
+    """Parse a single config option from the given text.
+    """
+    options = extract_options(text, key)
+    if options:
+        return options[0]
+    else:
+        return None
 
 def get_command(config, path):
     """Get the shell command to run for a given test, as a string.
@@ -62,29 +70,59 @@ def get_command(config, path):
         args=args,
     )
 
-
-def get_out_file(config, path):
-    """Get the filename containing the expected output for a test.
+def format_path_configs(name, path): 
+    """Format filename and base in a given name
     """
-    base, _ = os.path.splitext(path)
-    return '{}.out'.format(base)
+    filename = os.path.basename(path)
+    base, _ = os.path.splitext(filename)
+    return name.format(
+        filename=shlex.quote(filename),
+        base=shlex.quote(base)
+    )
 
+def get_out_files(config, path):
+    """Get the mapping from saved output files to expected output files for the test.
+    """
+    with open(path) as f:
+        contents = f.read()
+    outputs = extract_options(contents, 'out')
+
+    if outputs:
+        outputs = {k : v for k, v in (o.split() for o in outputs)}
+    elif "output" in config:
+        outputs = config["output"]
+    else:
+        # If no outputs given anywhere, assume standard out. 
+        outputs = {"out" : "-"}
+
+    base, _ = os.path.splitext(path)
+    base += "."
+
+    return {base + k : format_path_configs(v, path) for (k, v) in outputs.items()}
+
+def get_absolute_path(name, path):
+    """Get the full absolute path for a user-provided name
+    """
+    return os.path.join(os.path.abspath(os.path.dirname(path)), name) 
 
 def run_test(path, idx, save, diff, tap, verbose):
     config = load_config(path)
     cmd = get_command(config, path)
-    out_path = get_out_file(config, path)
+    out_files = get_out_files(config, path)
 
     # Run the command.
-    with tempfile.NamedTemporaryFile(delete=False) as out, \
+    with tempfile.NamedTemporaryFile(delete=False) as stdout, \
             tempfile.NamedTemporaryFile(delete=False) as err:
         completed = subprocess.run(
             cmd,
             shell=True,
-            stdout=out,
+            stdout=stdout,
             stderr=err,
             cwd=os.path.abspath(os.path.dirname(path)),
         )
+
+    # Get full paths. Special case: map "-"" to standard out.
+    out_files = {k : stdout.name if v == "-" else get_absolute_path(v, path) for (k, v) in out_files.items()}
 
     try:
         # If the command has a non-zero exit code, fail.
@@ -104,24 +142,28 @@ def run_test(path, idx, save, diff, tap, verbose):
                 if cmd_err:
                     print(cmd_err, file=sys.stderr)
 
-        # Diff the actual & expected output.
-        if diff:
-            subprocess.run(['diff', '--new-file', out_path, out.name])
+        # Check whether outputs match & summarize.
+        success = True
+        for saved_file, output_file in out_files.items():
+            
+            # Diff the actual & expected output.
+            if diff:
+                subprocess.run(['diff', '--new-file', saved_file, output_file])
 
-        # Check whether output matches & summarize.
-        with open(out.name) as f:
-            actual = f.read()
-        if os.path.isfile(out_path):
-            with open(out_path) as f:
-                expected = f.read()
-        else:
-            expected = None
-        success = actual == expected
+            with open(output_file) as f:
+                actual = f.read()
+            if os.path.isfile(saved_file):
+                with open(saved_file) as f:
+                    expected = f.read()
+            else:
+                expected = None
+            success &= actual == expected
 
         # Save the new output, if requested.
         update = save and not success
         if update:
-            shutil.copy(out.name, out_path)
+            for saved_file, output_file in out_files.items():
+                shutil.copy(output_file, saved_file)
 
         if tap:
             line = '{} {} - {}'.format(
@@ -130,11 +172,11 @@ def run_test(path, idx, save, diff, tap, verbose):
                 path,
             )
             if update:
-                line += ' # skip: updated {}'.format(out_path)
+                line += ' # skip: updated {}'.format(list(out_files.keys()))
             print(line)
 
     finally:
-        os.unlink(out.name)
+        os.unlink(stdout.name)
         os.unlink(err.name)
 
     return success
