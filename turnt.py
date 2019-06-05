@@ -28,13 +28,12 @@ def load_config(path):
 
 
 def get_command(config, path):
-    """Get the command to run for a given test.
+    """Get the shell command to run for a given test, as a string.
     """
-    parts = shlex.split(config['command'])
-    return [
-        p.format(filename=os.path.basename(path))
-        for p in parts
-    ]
+    filename = os.path.basename(path)
+    return config['command'].format(
+        filename=shlex.quote(filename),
+    )
 
 
 def get_out_file(config, path):
@@ -54,6 +53,7 @@ def run_test(path, idx, save, diff, tap, verbose):
         tempfile.NamedTemporaryFile(delete=False) as err:
         completed = subprocess.run(
             cmd,
+            shell=True,
             stdout=out,
             stderr=err,
             cwd=os.path.abspath(os.path.dirname(path)),
