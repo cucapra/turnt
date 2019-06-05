@@ -31,8 +31,10 @@ def get_command(config, path):
     """Get the shell command to run for a given test, as a string.
     """
     filename = os.path.basename(path)
+    base, _ = os.path.splitext(filename)
     return config['command'].format(
         filename=shlex.quote(filename),
+        base=shlex.quote(base),
     )
 
 

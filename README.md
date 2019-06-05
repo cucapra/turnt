@@ -10,6 +10,7 @@ To use it:
 1. Create a `turnt.toml` configuration file in your tests directory.
    It currently only has one option: `command`, which should be the shell command to run.
    In the command, `{filename}` is substituted for the test input file.
+   If you need it, `{base}` is the filename without the extension.
 2. Write a test (the input file).
 3. Get the initial output.
    Run `turnt --save foo.ext` to generate the expected output in `foo.out`.
