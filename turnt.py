@@ -51,6 +51,7 @@ def get_command(config, path):
     with open(path) as f:
         contents = f.read()
     cmd = extract_option(contents, 'cmd') or config['command']
+    args = extract_option(contents, 'args') or ''
 
     # Construct the command.
     filename = os.path.basename(path)
@@ -58,6 +59,7 @@ def get_command(config, path):
     return cmd.format(
         filename=shlex.quote(filename),
         base=shlex.quote(base),
+        args=args,
     )
 
 

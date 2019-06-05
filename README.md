@@ -13,6 +13,7 @@ To use it:
    If you need it, `{base}` is the filename without the extension.
 2. Write a test (the input file).
    Optionally, include a comment somewhere in the test file like `CMD: <your command here>` to override the configured command with a new one for this test.
+   You can also use `ARGS: <something>` to specify extra arguments, which will get substituted for `{args}` in the test command.
 3. Get the initial output.
    Run `turnt --save foo.ext` to generate the expected output in `foo.out`.
    You'll want to check this output into your repository.
