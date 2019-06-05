@@ -1,1 +1,1 @@
-command = "echo {base} ; cat {filename}"
+command = "echo {base} {args} ; cat {filename}"
