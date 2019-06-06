@@ -8,15 +8,15 @@ You want to run a command on the input file and check that the output is equal t
 To use it:
 
 1. Optionally, create a `turnt.toml` configuration file in your tests directory.
-   It currently only has one option: `command`, which should be the shell command to run.
+   It currently only has one required option: `command`, which should be the shell command to run.  `output` lets you specify custom output files. For example, `output.txt = "my_output.txt"` specified that the contents of the file `my_output.txt` produced by the command should be saved as `{base}.txt`.
    In the command, `{filename}` is substituted for the test input file.
-   If you need it, `{base}` is the filename without the extension.
+   If you need it, `{base}` is the filename without the extension. 
 2. Write a test (the input file).
    Optionally, include a comment somewhere in the test file like `CMD: <your command here>` to override the configured command with a new one for this test.
-   You can also use `ARGS: <something>` to specify extra arguments, which will get substituted for `{args}` in the test command.
+   You can also use `ARGS: <something>` to specify extra arguments, which will get substituted for `{args}` in the test command. You can specify custom output files with `OUT: <extension> <filename>` (one line per file).
 3. Get the initial output.
-   Run `turnt --save foo.ext` to generate the expected output in `foo.out`.
-   You'll want to check this output into your repository.
+   Run `turnt --save foo.ext` to generate the expected output in (by default) `foo.out` and/or any custom output files.
+   You'll want to check these output files into your repository.
 4. Run the tests.
    Use `turnt foo.ext` to check a test output.
    If a test fails, add `--diff` to compare the actual and expected outputs.
