@@ -113,7 +113,7 @@ def get_absolute_path(name, path):
     return os.path.join(os.path.abspath(os.path.dirname(path)), name)
 
 
-def run_test(path, idx, save, diff, tap, verbose):
+def run_test(path, idx, save, diff, verbose):
     config = load_config(path)
     cmd = get_command(config, path)
     out_files = get_out_files(config, path)
@@ -139,9 +139,8 @@ def run_test(path, idx, save, diff, tap, verbose):
         if completed.returncode != 0:
             with open(err.name) as f:
                 cmd_err = f.read()
-                if tap:
-                    print('not ok {} - {}'.format(idx, path))
-                    print('# exit code: {}'.format(completed.returncode))
+                print('not ok {} - {}'.format(idx, path))
+                print('# exit code: {}'.format(completed.returncode))
                 sys.stderr.write(cmd_err)
                 return False
 
@@ -175,15 +174,15 @@ def run_test(path, idx, save, diff, tap, verbose):
             for saved_file, output_file in out_files.items():
                 shutil.copy(output_file, saved_file)
 
-        if tap:
-            line = '{} {} - {}'.format(
-                'ok' if success else 'not ok',
-                idx,
-                path,
-            )
-            if update:
-                line += ' # skip: updated {}'.format(list(out_files.keys()))
-            print(line)
+        # Show TAP success line.
+        line = '{} {} - {}'.format(
+            'ok' if success else 'not ok',
+            idx,
+            path,
+        )
+        if update:
+            line += ' # skip: updated {}'.format(list(out_files.keys()))
+        print(line)
 
     finally:
         os.unlink(stdout.name)
@@ -197,18 +196,16 @@ def run_test(path, idx, save, diff, tap, verbose):
               help='Save new outputs (overwriting old).')
 @click.option('--diff', is_flag=True, default=False,
               help='Show a diff between the actual and expected output.')
-@click.option('--tap/--no-tap', default=True,
-              help='Summarize test success in TAP format.')
 @click.option('-v', '--verbose', is_flag=True, default=False,
-              help='Do not suppress command stderr output.')
+              help='Do not suppress stderr from successful commands.')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
-def turnt(file, save, diff, tap, verbose):
-    if tap and file:
+def turnt(file, save, diff, verbose):
+    if file:
         print('1..{}'.format(len(file)))
 
     success = True
     for idx, path in enumerate(file):
-        success &= run_test(path, idx + 1, save, diff, tap, verbose)
+        success &= run_test(path, idx + 1, save, diff, verbose)
 
     sys.exit(0 if success else 1)
 
