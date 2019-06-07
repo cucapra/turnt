@@ -114,10 +114,10 @@ def get_absolute_path(name, path):
     return os.path.join(os.path.abspath(os.path.dirname(path)), name)
 
 
-def check_result(path, idx, save, diff, proc, out_files):
+def check_result(name, idx, save, diff, proc, out_files):
     # If the command has a non-zero exit code, fail.
     if proc.returncode != 0:
-        print('not ok {} - {}'.format(idx, path))
+        print('not ok {} - {}'.format(idx, name))
         print('# exit code: {}'.format(proc.returncode))
         if proc.stderr:
             sys.stderr.buffer.write(proc.stderr)
@@ -148,11 +148,7 @@ def check_result(path, idx, save, diff, proc, out_files):
             shutil.copy(output_file, saved_file)
 
     # Show TAP success line.
-    line = '{} {} - {}'.format(
-        'ok' if success else 'not ok',
-        idx,
-        path,
-    )
+    line = '{} {} - {}'.format('ok' if success else 'not ok', idx, name)
     if update:
         line += ' # skip: updated {}'.format(list(out_files.keys()))
     print(line)
