@@ -77,3 +77,16 @@ To make the output more pleasant to read, you can pipe it into a tool like [tap-
 
 [tap]: http://testanything.org
 [tap-difflet]: https://github.com/namuol/tap-difflet
+
+
+Authors
+-------
+
+Turnt is by [Adrian Sampson][adrian] and [Alexa VanHattum][alexa].
+We made it to test various research compilers in [Capra][].
+The license is [MIT][].
+
+[adrian]: https://www.cs.cornell.edu/~asampson/
+[alexa]: https://www.cs.cornell.edu/~avh/
+[capra]: https://capra.cs.cornell.edu
+[mit]: https://opensource.org/licenses/MIT
