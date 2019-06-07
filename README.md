@@ -2,7 +2,7 @@ Tiny Unified Runner N' Tester (Turnt)
 =====================================
 
 Turnt is a simple testing tool inspired by [Cram][] and [LLVM's lit][lit].
-The idea is that each test consists of two or more files: an input file and one or more output files.
+The idea is that each test consists a single input file and one or more output files.
 You want to run a command on the input file and check that the output is equal to the expected output files.
 
 To use it:
