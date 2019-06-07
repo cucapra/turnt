@@ -122,6 +122,9 @@ def load_options(config, path):
 
 
 def check_result(name, idx, save, diff, proc, out_files):
+    """Check the results of a single test and print the outcome. Return
+    a bool indicating success.
+    """
     # If the command has a non-zero exit code, fail.
     if proc.returncode != 0:
         print('not ok {} - {}'.format(idx, name))
@@ -164,6 +167,8 @@ def check_result(name, idx, save, diff, proc, out_files):
 
 
 def run_test(path, idx, save, diff, verbose):
+    """Run a single test and check its output.
+    """
     config = load_config(path)
     cmd, out_files = load_options(config, path)
 
