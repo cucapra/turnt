@@ -53,12 +53,9 @@ def extract_single_option(text, key):
         return None
 
 
-def get_command(config, path):
+def get_command(config, path, contents):
     """Get the shell command to run for a given test, as a string.
     """
-    # Parse options from the test file.
-    with open(path) as f:
-        contents = f.read()
     cmd = extract_single_option(contents, 'cmd') or config['command']
     args = extract_single_option(contents, 'args') or ''
 
@@ -83,12 +80,10 @@ def format_path_configs(name, path):
     )
 
 
-def get_out_files(config, path):
+def get_out_files(config, path, contents):
     """Get the mapping from saved output files to expected output files
     for the test.
     """
-    with open(path) as f:
-        contents = f.read()
     outputs = extract_options(contents, 'out')
 
     if outputs:
@@ -104,6 +99,20 @@ def get_out_files(config, path):
 
     return {base + k: format_path_configs(v, path)
             for (k, v) in outputs.items()}
+
+
+def load_options(config, path):
+    """Extract the options embedded in the test file, which can override
+    the options in the configuration.
+
+    Return the test command and an output file mapping.
+    """
+    with open(path) as f:
+        contents = f.read()
+    return (
+        get_command(config, path, contents),
+        get_out_files(config, path, contents),
+    )
 
 
 def get_absolute_path(name, path):
@@ -156,8 +165,7 @@ def check_result(name, idx, save, diff, proc, out_files):
 
 def run_test(path, idx, save, diff, verbose):
     config = load_config(path)
-    cmd = get_command(config, path)
-    out_files = get_out_files(config, path)
+    cmd, out_files = load_options(config, path)
 
     # Run the command.
     with tempfile.NamedTemporaryFile(delete=False) as stdout:
