@@ -129,12 +129,12 @@ def run_test(path, idx, save, diff, verbose):
             cwd=os.path.abspath(os.path.dirname(path)),
         )
 
-    # Get full paths. Special case: map "-"" to standard out.
-    out_files = {k: stdout.name if v == "-"
-                 else get_absolute_path(v, path)
-                 for (k, v) in out_files.items()}
-
     try:
+        # Get full paths. Special case: map "-" to standard out.
+        out_files = {k: stdout.name if v == "-"
+                     else get_absolute_path(v, path)
+                     for (k, v) in out_files.items()}
+
         # If the command has a non-zero exit code, fail.
         if completed.returncode != 0:
             print('not ok {} - {}'.format(idx, path))
