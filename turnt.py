@@ -69,14 +69,21 @@ def get_command(config, path, contents):
     )
 
 
-def format_output_filename(name, path):
-    """Substitute patterns in configured output filenames.
+def format_output_path(name, path):
+    """Substitute patterns in configured output filenames and produce a
+    complete path (relative to `path`, which is the test file).
     """
+    if name == '-':
+        return name
+
     filename = os.path.basename(path)
     base, _ = os.path.splitext(filename)
-    return name.format(
-        filename=filename,
-        base=shlex.quote(base)
+    return os.path.join(
+        os.path.dirname(path),
+        name.format(
+            filename=filename,
+            base=shlex.quote(base),
+        )
     )
 
 
@@ -95,7 +102,7 @@ def get_out_files(config, path, contents):
         outputs = {"out": "-"}
 
     base, _ = os.path.splitext(path)
-    return {'{}.{}'.format(base, k): format_output_filename(v, path)
+    return {'{}.{}'.format(base, k): format_output_path(v, path)
             for (k, v) in outputs.items()}
 
 
@@ -111,12 +118,6 @@ def load_options(config, path):
         get_command(config, path, contents),
         get_out_files(config, path, contents),
     )
-
-
-def get_absolute_path(name, path):
-    """Get the full absolute path for a user-provided name
-    """
-    return os.path.join(os.path.abspath(os.path.dirname(path)), name)
 
 
 def check_result(name, idx, save, diff, proc, out_files):
@@ -176,9 +177,8 @@ def run_test(path, idx, save, diff, verbose):
         )
 
     try:
-        # Get full paths. Special case: map "-" to standard out.
-        out_files = {k: stdout.name if v == "-"
-                     else get_absolute_path(v, path)
+        # Replace "-" with the standard output file.
+        out_files = {k: stdout.name if v == "-" else v
                      for (k, v) in out_files.items()}
 
         return check_result(path, idx, save, diff, proc, out_files)
