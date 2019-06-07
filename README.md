@@ -14,7 +14,7 @@ To use it:
    Or you can embed it in a comment in the test file itself: use `CMD: mycmd {filename}`.
 3. Get the initial output.
    Run `turnt --save foo.t` to generate the expected output in `foo.out`.
-   You'll want to check these output files into your repository.
+   You'll want to check these output files into version control along with your test.
 4. Run the tests.
    Use `turnt foo.t` to check a test output.
    If a test fails, add `--diff` to compare the actual and expected outputs.
