@@ -14,6 +14,7 @@ import re
 __version__ = '0.0.1'
 
 CONFIG_FILENAME = 'turnt.toml'
+DIFF_CMD = ['diff', '--new-file']
 
 
 def load_config(path):
@@ -143,14 +144,14 @@ def run_test(path, idx, save, diff, verbose):
                 sys.stderr.buffer.flush()
             return False
 
-        # Check whether outputs match & summarize.
+        # Check whether outputs match.
         success = True
         for saved_file, output_file in out_files.items():
-
             # Diff the actual & expected output.
             if diff:
-                subprocess.run(['diff', '--new-file', saved_file, output_file])
+                subprocess.run(DIFF_CMD + [saved_file, output_file])
 
+            # Read actual & expected output and compare.
             with open(output_file) as f:
                 actual = f.read()
             if os.path.isfile(saved_file):
