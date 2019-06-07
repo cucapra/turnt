@@ -114,6 +114,52 @@ def get_absolute_path(name, path):
     return os.path.join(os.path.abspath(os.path.dirname(path)), name)
 
 
+def check_result(path, idx, save, diff, proc, out_files):
+    # If the command has a non-zero exit code, fail.
+    if proc.returncode != 0:
+        print('not ok {} - {}'.format(idx, path))
+        print('# exit code: {}'.format(proc.returncode))
+        if proc.stderr:
+            sys.stderr.buffer.write(proc.stderr)
+            sys.stderr.buffer.flush()
+        return False
+
+    # Check whether outputs match.
+    success = True
+    for saved_file, output_file in out_files.items():
+        # Diff the actual & expected output.
+        if diff:
+            subprocess.run(DIFF_CMD + [saved_file, output_file])
+
+        # Read actual & expected output and compare.
+        with open(output_file) as f:
+            actual = f.read()
+        if os.path.isfile(saved_file):
+            with open(saved_file) as f:
+                expected = f.read()
+        else:
+            expected = None
+        success &= actual == expected
+
+    # Save the new output, if requested.
+    update = save and not success
+    if update:
+        for saved_file, output_file in out_files.items():
+            shutil.copy(output_file, saved_file)
+
+    # Show TAP success line.
+    line = '{} {} - {}'.format(
+        'ok' if success else 'not ok',
+        idx,
+        path,
+    )
+    if update:
+        line += ' # skip: updated {}'.format(list(out_files.keys()))
+    print(line)
+
+    return success
+
+
 def run_test(path, idx, save, diff, verbose):
     config = load_config(path)
     cmd = get_command(config, path)
@@ -121,7 +167,7 @@ def run_test(path, idx, save, diff, verbose):
 
     # Run the command.
     with tempfile.NamedTemporaryFile(delete=False) as stdout:
-        completed = subprocess.run(
+        proc = subprocess.run(
             cmd,
             shell=True,
             stdout=stdout,
@@ -135,52 +181,9 @@ def run_test(path, idx, save, diff, verbose):
                      else get_absolute_path(v, path)
                      for (k, v) in out_files.items()}
 
-        # If the command has a non-zero exit code, fail.
-        if completed.returncode != 0:
-            print('not ok {} - {}'.format(idx, path))
-            print('# exit code: {}'.format(completed.returncode))
-            if completed.stderr:
-                sys.stderr.buffer.write(completed.stderr)
-                sys.stderr.buffer.flush()
-            return False
-
-        # Check whether outputs match.
-        success = True
-        for saved_file, output_file in out_files.items():
-            # Diff the actual & expected output.
-            if diff:
-                subprocess.run(DIFF_CMD + [saved_file, output_file])
-
-            # Read actual & expected output and compare.
-            with open(output_file) as f:
-                actual = f.read()
-            if os.path.isfile(saved_file):
-                with open(saved_file) as f:
-                    expected = f.read()
-            else:
-                expected = None
-            success &= actual == expected
-
-        # Save the new output, if requested.
-        update = save and not success
-        if update:
-            for saved_file, output_file in out_files.items():
-                shutil.copy(output_file, saved_file)
-
-        # Show TAP success line.
-        line = '{} {} - {}'.format(
-            'ok' if success else 'not ok',
-            idx,
-            path,
-        )
-        if update:
-            line += ' # skip: updated {}'.format(list(out_files.keys()))
-        print(line)
-
+        return check_result(path, idx, save, diff, proc, out_files)
     finally:
         os.unlink(stdout.name)
-
-    return success
 
 
 @click.command()
