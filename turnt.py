@@ -27,6 +27,7 @@ def load_config(path):
     else:
         return {}
 
+
 def extract_options(text, key):
     """Parse a config option(s) from the given text.
 
@@ -52,6 +53,7 @@ def extract_option(text, key):
     else:
         return None
 
+
 def get_command(config, path):
     """Get the shell command to run for a given test, as a string.
     """
@@ -70,7 +72,8 @@ def get_command(config, path):
         args=args,
     )
 
-def format_path_configs(name, path): 
+
+def format_path_configs(name, path):
     """Format filename and base in a given name
     """
     filename = os.path.basename(path)
@@ -80,30 +83,35 @@ def format_path_configs(name, path):
         base=shlex.quote(base)
     )
 
+
 def get_out_files(config, path):
-    """Get the mapping from saved output files to expected output files for the test.
+    """Get the mapping from saved output files to expected output files
+    for the test.
     """
     with open(path) as f:
         contents = f.read()
     outputs = extract_options(contents, 'out')
 
     if outputs:
-        outputs = {k : v for k, v in (o.split() for o in outputs)}
+        outputs = {k: v for k, v in (o.split() for o in outputs)}
     elif "output" in config:
         outputs = config["output"]
     else:
-        # If no outputs given anywhere, assume standard out. 
-        outputs = {"out" : "-"}
+        # If no outputs given anywhere, assume standard out.
+        outputs = {"out": "-"}
 
     base, _ = os.path.splitext(path)
     base += "."
 
-    return {base + k : format_path_configs(v, path) for (k, v) in outputs.items()}
+    return {base + k: format_path_configs(v, path)
+            for (k, v) in outputs.items()}
+
 
 def get_absolute_path(name, path):
     """Get the full absolute path for a user-provided name
     """
-    return os.path.join(os.path.abspath(os.path.dirname(path)), name) 
+    return os.path.join(os.path.abspath(os.path.dirname(path)), name)
+
 
 def run_test(path, idx, save, diff, tap, verbose):
     config = load_config(path)
@@ -122,7 +130,9 @@ def run_test(path, idx, save, diff, tap, verbose):
         )
 
     # Get full paths. Special case: map "-"" to standard out.
-    out_files = {k : stdout.name if v == "-" else get_absolute_path(v, path) for (k, v) in out_files.items()}
+    out_files = {k: stdout.name if v == "-"
+                 else get_absolute_path(v, path)
+                 for (k, v) in out_files.items()}
 
     try:
         # If the command has a non-zero exit code, fail.
@@ -145,7 +155,7 @@ def run_test(path, idx, save, diff, tap, verbose):
         # Check whether outputs match & summarize.
         success = True
         for saved_file, output_file in out_files.items():
-            
+
             # Diff the actual & expected output.
             if diff:
                 subprocess.run(['diff', '--new-file', saved_file, output_file])
