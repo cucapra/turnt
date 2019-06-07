@@ -7,17 +7,11 @@ You want to run a command on the input file and check that the output is equal t
 
 To use it:
 
-1. Optionally, create a `turnt.toml` configuration file in your tests directory.
-   `{filename}` is substituted for the test input file.
-   If you need it, `{base}` is the filename without the extension. 
-   The main option, `command`, should be the shell command to run.  
-   The optional `output` lets you specify custom output files as `output.<extension> = <filename>`. 
-   For example, `output.txt = "my_output.txt"` specifies that the contents of the file `my_output.txt` should be saved as `{base}.txt`, and compared against on subsequent runs. 
-   The character `-` can be used on the right hand side to specify standard out (thus, `output.out = "-"` specifies the default behavior, but can be omitted if standard out should be ignored).
-2. Write a test (the input file).
-   Optionally, include a comment somewhere in the test file like `CMD: <your command here>` to override the configured command with a new one for this test.
-   You can also use `ARGS: <something>` to specify extra arguments, which will get substituted for `{args}` in the test command. 
-   You can specify custom output files with `OUT: <extension> <filename>` (one line per file).
+1. Create a test file.
+2. Decide what command you need to run on this input.
+   There are two options:
+   You can put this in a `turnt.toml` config file alongside your test: use `command = "mycmd {filename}"` to pass the test file as an argument to `mycmd`.
+   Or you can embed it in a comment in the test file itself: use `CMD: mycmd {filename}`.
 3. Get the initial output.
    Run `turnt --save foo.ext` to generate the expected output in (by default) `foo.out` and/or any custom output files.
    You'll want to check these output files into your repository.
@@ -27,6 +21,34 @@ To use it:
 
 [cram]: https://bitheap.org/cram/
 [lit]: https://llvm.org/docs/CommandGuide/lit.html
+
+
+Details
+-------
+
+These options are available in `turnt.toml`:
+
+- `command`.
+  This is a shell command to run for each test input.
+- `output`.
+  This is a mapping from extensions to output files to collect from each test.
+  For example, use `output.txt = "my_output.txt"` to collect `my_output.txt` after each text extension and save it in `<test-name>.txt`.
+  Use `-` to indicate the command's standard output.
+  The default is like `output.out = "-"`, i.e., capture stdout and save it in `<test-name>.out`.
+  You can include this yourself or omit if if you want to ignore the standard output.
+
+Equivalently, you can embed options in test files themselves:
+
+- `CMD: <command>` overrides `command` from the configuration.
+- `OUT: <ext> <filename>` overrides `output` from the configuration.
+  You can specify multiple files this way: one line per file.
+- `ARGS: <arguments>`. Add arguments to a configured command (see below).
+
+In commands and filenames, you can use certain patterns that get substituted with details about the tests:
+
+- `{filename}`: The name of the test file (without the directory part).
+- `{base}`: Just the basename of the test file (no extension).
+- `{args}`: Extra arguments specified using `ARGS:` in the test file.
 
 
 Install
