@@ -119,13 +119,12 @@ def run_test(path, idx, save, diff, verbose):
     out_files = get_out_files(config, path)
 
     # Run the command.
-    with tempfile.NamedTemporaryFile(delete=False) as stdout, \
-            tempfile.NamedTemporaryFile(delete=False) as err:
+    with tempfile.NamedTemporaryFile(delete=False) as stdout:
         completed = subprocess.run(
             cmd,
             shell=True,
             stdout=stdout,
-            stderr=err,
+            stderr=None if verbose else subprocess.PIPE,
             cwd=os.path.abspath(os.path.dirname(path)),
         )
 
@@ -137,19 +136,12 @@ def run_test(path, idx, save, diff, verbose):
     try:
         # If the command has a non-zero exit code, fail.
         if completed.returncode != 0:
-            with open(err.name) as f:
-                cmd_err = f.read()
-                print('not ok {} - {}'.format(idx, path))
-                print('# exit code: {}'.format(completed.returncode))
-                sys.stderr.write(cmd_err)
-                return False
-
-        # Output error, if requested.
-        if verbose:
-            with open(err.name) as f:
-                cmd_err = f.read()
-                if cmd_err:
-                    print(cmd_err, file=sys.stderr)
+            print('not ok {} - {}'.format(idx, path))
+            print('# exit code: {}'.format(completed.returncode))
+            if completed.stderr:
+                sys.stderr.buffer.write(completed.stderr)
+                sys.stderr.buffer.flush()
+            return False
 
         # Check whether outputs match & summarize.
         success = True
@@ -186,7 +178,6 @@ def run_test(path, idx, save, diff, verbose):
 
     finally:
         os.unlink(stdout.name)
-        os.unlink(err.name)
 
     return success
 
