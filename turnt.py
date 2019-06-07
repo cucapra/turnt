@@ -15,6 +15,7 @@ __version__ = '0.0.1'
 
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_CMD = ['diff', '--new-file']
+STDOUT = '-'
 
 
 def load_config(path):
@@ -73,7 +74,7 @@ def format_output_path(name, path):
     """Substitute patterns in configured output filenames and produce a
     complete path (relative to `path`, which is the test file).
     """
-    if name == '-':
+    if name == STDOUT:
         return name
 
     filename = os.path.basename(path)
@@ -99,7 +100,7 @@ def get_out_files(config, path, contents):
         outputs = config["output"]
     else:
         # If no outputs given anywhere, assume standard out.
-        outputs = {"out": "-"}
+        outputs = {"out": STDOUT}
 
     base, _ = os.path.splitext(path)
     return {'{}.{}'.format(base, k): format_output_path(v, path)
@@ -178,7 +179,7 @@ def run_test(path, idx, save, diff, verbose):
 
     try:
         # Replace "-" with the standard output file.
-        out_files = {k: stdout.name if v == "-" else v
+        out_files = {k: stdout.name if v == STDOUT else v
                      for (k, v) in out_files.items()}
 
         return check_result(path, idx, save, diff, proc, out_files)
