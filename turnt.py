@@ -69,13 +69,13 @@ def get_command(config, path, contents):
     )
 
 
-def format_path_configs(name, path):
-    """Format filename and base in a given name
+def format_output_filename(name, path):
+    """Substitute patterns in configured output filenames.
     """
     filename = os.path.basename(path)
     base, _ = os.path.splitext(filename)
     return name.format(
-        filename=shlex.quote(filename),
+        filename=filename,
         base=shlex.quote(base)
     )
 
@@ -95,9 +95,7 @@ def get_out_files(config, path, contents):
         outputs = {"out": "-"}
 
     base, _ = os.path.splitext(path)
-    base += "."
-
-    return {base + k: format_path_configs(v, path)
+    return {'{}.{}'.format(base, k): format_output_filename(v, path)
             for (k, v) in outputs.items()}
 
 
