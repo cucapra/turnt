@@ -2,8 +2,8 @@ Tiny Unified Runner N' Tester (Turnt)
 =====================================
 
 Turnt is a simple testing tool inspired by [Cram][] and [LLVM's lit][lit].
-The idea is that each test consists of two or more files: an input file and output file(s).
-You want to run a command on the input file and check that the output is equal to the expected output file(s).
+The idea is that each test consists of two or more files: an input file and one or more output files.
+You want to run a command on the input file and check that the output is equal to the expected output files.
 
 To use it:
 
@@ -13,10 +13,10 @@ To use it:
    You can put this in a `turnt.toml` config file alongside your test: use `command = "mycmd {filename}"` to pass the test file as an argument to `mycmd`.
    Or you can embed it in a comment in the test file itself: use `CMD: mycmd {filename}`.
 3. Get the initial output.
-   Run `turnt --save foo.ext` to generate the expected output in (by default) `foo.out` and/or any custom output files.
+   Run `turnt --save foo.t` to generate the expected output in `foo.out`.
    You'll want to check these output files into your repository.
 4. Run the tests.
-   Use `turnt foo.ext` to check a test output.
+   Use `turnt foo.t` to check a test output.
    If a test fails, add `--diff` to compare the actual and expected outputs.
 
 [cram]: https://bitheap.org/cram/
