@@ -34,19 +34,17 @@ def extract_options(text, key):
 
     Options are embedded in declarations like "KEY: value" that may
     occur anywhere in the file. We take all the text after "KEY: " until
-    the end of the line. Return the value strings as a list or None if the
-    declaration was not found.
+    the end of the line. Return the value strings as a list.
     """
     regex = r'\b{}:\s+(.*)'.format(key.upper())
-    matches = re.findall(regex, text)
-    if matches:
-        return matches
-    else:
-        return None
+    return re.findall(regex, text)
 
 
-def extract_option(text, key):
+def extract_single_option(text, key):
     """Parse a single config option from the given text.
+
+    The format is the same as for `extract_options`, but we return only
+    the first value---or None if there are no instances.
     """
     options = extract_options(text, key)
     if options:
@@ -61,8 +59,8 @@ def get_command(config, path):
     # Parse options from the test file.
     with open(path) as f:
         contents = f.read()
-    cmd = extract_option(contents, 'cmd') or config['command']
-    args = extract_option(contents, 'args') or ''
+    cmd = extract_single_option(contents, 'cmd') or config['command']
+    args = extract_single_option(contents, 'args') or ''
 
     # Construct the command.
     filename = os.path.basename(path)
