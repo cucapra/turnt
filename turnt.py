@@ -111,10 +111,17 @@ def load_options(config, path):
     """Extract the options embedded in the test file, which can override
     the options in the configuration.
 
+    The path need not exist or be a file. If it's a directory or does
+    not exist, no options are extracted (and the defaults are used).
+
     Return the test command and an output file mapping.
     """
-    with open(path) as f:
-        contents = f.read()
+    if os.path.isfile(path):
+        with open(path) as f:
+            contents = f.read()
+    else:
+        contents = ''
+
     return (
         get_command(config, path, contents),
         get_out_files(config, path, contents),
