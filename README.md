@@ -50,6 +50,9 @@ In commands and filenames, you can use certain patterns that get substituted wit
 - `{base}`: Just the basename of the test file (no extension).
 - `{args}`: Extra arguments specified using `ARGS:` in the test file.
 
+If you need multiple files for a test, you can use a directory instead of a file.
+Turnt will not attempt to read embedded comment options from directories, and outputs will be placed *inside* the test directory instead of adjacent to it.
+
 
 Install
 -------
