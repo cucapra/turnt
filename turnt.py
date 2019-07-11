@@ -71,8 +71,9 @@ def get_command(config, path, contents):
 
 
 def format_output_path(name, path):
-    """Substitute patterns in configured output filenames and produce a
-    complete path (relative to `path`, which is the test file).
+    """Substitute patterns in configured *actual* output filenames and
+    produce a complete path (relative to `path`, which is the test
+    file).
     """
     if name == STDOUT:
         return name
@@ -86,6 +87,14 @@ def format_output_path(name, path):
             base=shlex.quote(base),
         )
     )
+
+
+def format_expected_path(ext, path):
+    """Generate the location to use for the *expected* output file for a
+    given test `path` and output extension key `ext`.
+    """
+    base, _ = os.path.splitext(path)
+    return '{}.{}'.format(base, ext)
 
 
 def get_out_files(config, path, contents):
@@ -102,8 +111,7 @@ def get_out_files(config, path, contents):
         # If no outputs given anywhere, assume standard out.
         outputs = {"out": STDOUT}
 
-    base, _ = os.path.splitext(path)
-    return {'{}.{}'.format(base, k): format_output_path(v, path)
+    return {format_expected_path(k, path): format_output_path(v, path)
             for (k, v) in outputs.items()}
 
 
