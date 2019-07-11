@@ -190,7 +190,7 @@ def check_result(name, idx, save, diff, proc, out_files):
     # Show TAP success line.
     line = '{} {} - {}'.format('ok' if success else 'not ok', idx, name)
     if update:
-        line += ' # skip: updated {}'.format(list(out_files.keys()))
+        line += ' # skip: updated {}'.format(', '.join(out_files.keys()))
     print(line)
 
     return success
