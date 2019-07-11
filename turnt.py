@@ -92,9 +92,24 @@ def format_output_path(name, path):
 def format_expected_path(ext, path):
     """Generate the location to use for the *expected* output file for a
     given test `path` and output extension key `ext`.
+
+    The resulting path is located "next to" the test file, using its
+    basename with a different extension---for example `./foo/bar.t`
+    becomes `./foo/bar.ext`. If the test path is a directory, the file is
+    placed *inside* this directory.
     """
-    base, _ = os.path.splitext(path)
-    return '{}.{}'.format(base, ext)
+    filename = os.path.basename(path)
+    base, _ = os.path.splitext(filename)
+
+    # When the test is a directory, place results there. Otherwise, when
+    # the test is a file, put results *alongside* the file, in the same
+    # parent directory.
+    if os.path.isdir(path):
+        dirname = path
+    else:
+        dirname = os.path.dirname(path)
+
+    return os.path.join(dirname, '{}.{}'.format(base, ext))
 
 
 def get_out_files(config, path, contents):
