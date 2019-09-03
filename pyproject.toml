@@ -6,6 +6,9 @@ build-backend = "flit.buildapi"
 module = "turnt"
 author = "Adrian Sampson"
 author-email = "asampson@cs.cornell.edu"
+home-page = "https://github.com/cucapra/turnt"
+description-file = "README.md"
+requires-python = "3"
 requires = [
     "click",
     "tomlkit",

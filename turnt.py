@@ -11,7 +11,7 @@ import shutil
 import sys
 import re
 
-__version__ = '0.0.1'
+__version__ = '1.0.0'
 
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_CMD = ['diff', '--new-file']

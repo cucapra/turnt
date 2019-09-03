@@ -23,6 +23,21 @@ To use it:
 [lit]: https://llvm.org/docs/CommandGuide/lit.html
 
 
+Install
+-------
+
+This is a Python 3 tool.
+Install it with [pip][]:
+
+    $ pip install --user turnt
+
+Or, if you want to work on Turnt, you can install [Flit][], clone this repository, and type this to get a "live" installation with a symlink:
+
+    $ flit install --symlink --user
+
+[pip]: https://pip.pypa.io/
+
+
 Details
 -------
 
@@ -52,21 +67,6 @@ In commands and filenames, you can use certain patterns that get substituted wit
 
 If you need multiple files for a test, you can use a directory instead of a file.
 Turnt will not attempt to read embedded comment options from directories, and outputs will be placed *inside* the test directory instead of adjacent to it.
-
-
-Install
--------
-
-This is a Python 3 tool.
-To install it, we use [Flit][]:
-
-    $ pip install --user flit
-
-Here's a quick way to install the tool with a symlink:
-
-    $ flit install --symlink --user
-
-[flit]: https://flit.readthedocs.io/en/latest/
 
 
 TAP
