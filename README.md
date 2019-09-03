@@ -36,6 +36,7 @@ Or, if you want to work on Turnt, you can install [Flit][], clone this repositor
     $ flit install --symlink --user
 
 [pip]: https://pip.pypa.io/
+[flit]: https://flit.readthedocs.io/
 
 
 Details
