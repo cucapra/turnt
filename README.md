@@ -70,6 +70,17 @@ If you need multiple files for a test, you can use a directory instead of a file
 Turnt will not attempt to read embedded comment options from directories, and outputs will be placed *inside* the test directory instead of adjacent to it.
 
 
+Command Line
+------------
+
+These are the command-line options:
+
+- `--save`: Bless the current output from each test as the "correct" output, saving it to the output file that you'll want to check into version control.
+- `--diff`: Show diffs between the actual and expected output for each test.
+- `--verbose` or `-v`: Disable Turnt's default behavior where it will suppress test commands' stderr output. The result is more helpful but harder to read.
+- `--print` or `-p`: Instead of checking test results, just run the command and show the output directly. This can be useful (especially in combination with `-v`) when iterating on a test interactively.
+
+
 TAP
 ---
 
