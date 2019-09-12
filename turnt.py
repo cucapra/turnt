@@ -10,6 +10,7 @@ import tempfile
 import shutil
 import sys
 import re
+import contextlib
 
 __version__ = '1.0.0'
 
@@ -196,30 +197,47 @@ def check_result(name, idx, save, diff, proc, out_files):
     return success
 
 
-def run_test(path, idx, save, diff, verbose):
-    """Run a single test and check its output.
+def run_test(path, idx, save, diff, verbose, dump):
+    """Run a single test.
+
+    Check the output and print a TAP summary line, unless `dump` is
+    enabled, in which case we just print the output. Return a bool
+    indicating success.
     """
     config = load_config(path)
     cmd, out_files = load_options(config, path)
 
-    # Run the command.
-    with tempfile.NamedTemporaryFile(delete=False) as stdout:
+    # Show the command if we're dumping the output.
+    if dump:
+        print('$', cmd, file=sys.stderr)
+
+    with contextlib.ExitStack() as stack:
+        # Possibly use a temporary file for the output.
+        if not dump:
+            stdout = tempfile.NamedTemporaryFile(delete=False)
+            stack.enter_context(stdout)
+
+        # Run the command.
         proc = subprocess.run(
             cmd,
             shell=True,
-            stdout=stdout,
+            stdout=None if dump else stdout,
             stderr=None if verbose else subprocess.PIPE,
             cwd=os.path.abspath(os.path.dirname(path)),
         )
 
-    try:
-        # Replace "-" with the standard output file.
-        out_files = {k: stdout.name if v == STDOUT else v
-                     for (k, v) in out_files.items()}
+    # Check results.
+    if dump:
+        return True
+    else:
+        try:
+            # Replace "-" with the standard output file.
+            out_files = {k: stdout.name if v == STDOUT else v
+                         for (k, v) in out_files.items()}
 
-        return check_result(path, idx, save, diff, proc, out_files)
-    finally:
-        os.unlink(stdout.name)
+            return check_result(path, idx, save, diff, proc, out_files)
+        finally:
+            os.unlink(stdout.name)
 
 
 @click.command()
@@ -227,16 +245,18 @@ def run_test(path, idx, save, diff, verbose):
               help='Save new outputs (overwriting old).')
 @click.option('--diff', is_flag=True, default=False,
               help='Show a diff between the actual and expected output.')
+@click.option('-p', '--print', 'dump', is_flag=True, default=False,
+              help="Just show the command output (don't check anything).")
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Do not suppress stderr from successful commands.')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
-def turnt(file, save, diff, verbose):
-    if file:
+def turnt(file, save, diff, verbose, dump):
+    if file and not dump:
         print('1..{}'.format(len(file)))
 
     success = True
     for idx, path in enumerate(file):
-        success &= run_test(path, idx + 1, save, diff, verbose)
+        success &= run_test(path, idx + 1, save, diff, verbose, dump)
 
     sys.exit(0 if success else 1)
 
