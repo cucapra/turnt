@@ -228,7 +228,7 @@ def run_test(path, idx, save, diff, verbose, dump):
 
     # Check results.
     if dump:
-        return True
+        return proc.returncode == 0
     else:
         try:
             # Replace "-" with the standard output file.
