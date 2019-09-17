@@ -55,11 +55,11 @@ def extract_single_option(text, key):
         return None
 
 
-def get_command(config, path, contents):
+def get_command(config, path, contents, args=None):
     """Get the shell command to run for a given test, as a string.
     """
     cmd = extract_single_option(contents, 'cmd') or config['command']
-    args = extract_single_option(contents, 'args') or ''
+    args = args or extract_single_option(contents, 'args') or ''
 
     # Construct the command.
     filename = os.path.basename(path)
@@ -131,14 +131,16 @@ def get_out_files(config, path, contents):
             for (k, v) in outputs.items()}
 
 
-def load_options(config, path):
+def load_options(config, path, args=None):
     """Extract the options embedded in the test file, which can override
-    the options in the configuration.
+    the options in the configuration. Return the test command and an
+    output file mapping.
 
     The path need not exist or be a file. If it's a directory or does
     not exist, no options are extracted (and the defaults are used).
 
-    Return the test command and an output file mapping.
+    `args` can override the arguments for the command, which otherwise
+    come from the file itself.
     """
     if os.path.isfile(path):
         with open(path) as f:
@@ -147,7 +149,7 @@ def load_options(config, path):
         contents = ''
 
     return (
-        get_command(config, path, contents),
+        get_command(config, path, contents, args),
         get_out_files(config, path, contents),
     )
 
@@ -197,7 +199,7 @@ def check_result(name, idx, save, diff, proc, out_files):
     return success
 
 
-def run_test(path, idx, save, diff, verbose, dump):
+def run_test(path, idx, save, diff, verbose, dump, args=None):
     """Run a single test.
 
     Check the output and print a TAP summary line, unless `dump` is
@@ -205,7 +207,7 @@ def run_test(path, idx, save, diff, verbose, dump):
     indicating success.
     """
     config = load_config(path)
-    cmd, out_files = load_options(config, path)
+    cmd, out_files = load_options(config, path, args)
 
     # Show the command if we're dumping the output.
     if dump:
@@ -249,14 +251,16 @@ def run_test(path, idx, save, diff, verbose, dump):
               help="Just show the command output (don't check anything).")
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Do not suppress stderr from successful commands.')
+@click.option('-a', '--args',
+              help='Override arguments for test commands.')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
-def turnt(file, save, diff, verbose, dump):
+def turnt(file, save, diff, verbose, dump, args):
     if file and not dump:
         print('1..{}'.format(len(file)))
 
     success = True
     for idx, path in enumerate(file):
-        success &= run_test(path, idx + 1, save, diff, verbose, dump)
+        success &= run_test(path, idx + 1, save, diff, verbose, dump, args)
 
     sys.exit(0 if success else 1)
 
