@@ -17,7 +17,7 @@ __version__ = '1.1.0'
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_CMD = ['diff', '--new-file']
 STDOUT = '-'
-
+STDERR = '2' 
 
 def load_config(path):
     """Load the configuration for a test at the given path.
@@ -55,7 +55,7 @@ def extract_single_option(text, key):
         return None
 
 
-def get_command(config, path, contents, args=None):
+def get_command(config, path, contents, args=None, err=None):
     """Get the shell command to run for a given test, as a string.
     """
     cmd = extract_single_option(contents, 'cmd') or config['command']
@@ -76,7 +76,7 @@ def format_output_path(name, path):
     produce a complete path (relative to `path`, which is the test
     file).
     """
-    if name == STDOUT:
+    if name == STDOUT or name == STDERR:
         return name
 
     filename = os.path.basename(path)
@@ -131,6 +131,17 @@ def get_out_files(config, path, contents):
             for (k, v) in outputs.items()}
 
 
+def get_return_code(config, contents):
+    return_code = extract_single_option(contents, 'return')
+
+    if return_code:
+        return int(return_code)
+    elif "return_code" in config:
+        return_code = int(config["output"])
+    else:
+        return 0
+
+
 def load_options(config, path, args=None):
     """Extract the options embedded in the test file, which can override
     the options in the configuration. Return the test command and an
@@ -151,17 +162,18 @@ def load_options(config, path, args=None):
     return (
         get_command(config, path, contents, args),
         get_out_files(config, path, contents),
+        get_return_code(config, contents),
     )
 
 
-def check_result(name, idx, save, diff, proc, out_files):
+def check_result(name, idx, save, diff, proc, out_files, return_code):
     """Check the results of a single test and print the outcome. Return
     a bool indicating success.
     """
     # If the command has a non-zero exit code, fail.
-    if proc.returncode != 0:
+    if proc.returncode != return_code:
         print('not ok {} - {}'.format(idx, name))
-        print('# exit code: {}'.format(proc.returncode))
+        print('# exit code: {}, expected: {}'.format(proc.returncode, return_code))
         if proc.stderr:
             sys.stderr.buffer.write(proc.stderr)
             sys.stderr.buffer.flush()
@@ -207,7 +219,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
     indicating success.
     """
     config = load_config(path)
-    cmd, out_files = load_options(config, path, args)
+    cmd, out_files, return_code = load_options(config, path, args)
 
     # Show the command if we're dumping the output.
     if dump:
@@ -217,14 +229,16 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
         # Possibly use a temporary file for the output.
         if not dump:
             stdout = tempfile.NamedTemporaryFile(delete=False)
+            stderr = tempfile.NamedTemporaryFile(delete=False)
             stack.enter_context(stdout)
+            stack.enter_context(stderr)
 
         # Run the command.
         proc = subprocess.run(
             cmd,
             shell=True,
             stdout=None if dump else stdout,
-            stderr=None if verbose else subprocess.PIPE,
+            stderr=None if verbose else stderr,
             cwd=os.path.abspath(os.path.dirname(path)),
         )
 
@@ -233,11 +247,18 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
         return proc.returncode == 0
     else:
         try:
-            # Replace "-" with the standard output file.
-            out_files = {k: stdout.name if v == STDOUT else v
-                         for (k, v) in out_files.items()}
+            def desugar(v): 
+                if v == STDOUT:
+                    return stdout.name
+                elif v == STDERR:
+                    return stderr.name
+                else:
+                    return v
 
-            return check_result(path, idx, save, diff, proc, out_files)
+            # Replace "-" with the standard output file.
+            out_files = {k: desugar(v) for (k, v) in out_files.items()}
+
+            return check_result(path, idx, save, diff, proc, out_files, return_code)
         finally:
             os.unlink(stdout.name)
 
