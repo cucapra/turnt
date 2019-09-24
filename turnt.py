@@ -17,7 +17,8 @@ __version__ = '1.1.0'
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_CMD = ['diff', '--new-file']
 STDOUT = '-'
-STDERR = '2' 
+STDERR = '2'
+
 
 def load_config(path):
     """Load the configuration for a test at the given path.
@@ -173,7 +174,8 @@ def check_result(name, idx, save, diff, proc, out_files, return_code):
     # If the command has a non-zero exit code, fail.
     if proc.returncode != return_code:
         print('not ok {} - {}'.format(idx, name))
-        print('# exit code: {}, expected: {}'.format(proc.returncode, return_code))
+        print('# exit code: {}, expected: {}'.format(proc.returncode,
+                                                     return_code))
         if proc.stderr:
             sys.stderr.buffer.write(proc.stderr)
             sys.stderr.buffer.flush()
@@ -247,7 +249,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
         return proc.returncode == 0
     else:
         try:
-            def desugar(v): 
+            def desugar(v):
                 if v == STDOUT:
                     return stdout.name
                 elif v == STDERR:
@@ -258,7 +260,8 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
             # Replace "-" with the standard output file.
             out_files = {k: desugar(v) for (k, v) in out_files.items()}
 
-            return check_result(path, idx, save, diff, proc, out_files, return_code)
+            return check_result(path, idx, save, diff, proc, out_files,
+                                return_code)
         finally:
             os.unlink(stdout.name)
 
