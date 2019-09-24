@@ -267,6 +267,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
                                 return_code)
         finally:
             os.unlink(stdout.name)
+            os.unlink(stderr.name)
 
 
 @click.command()
