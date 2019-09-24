@@ -49,9 +49,11 @@ These options are available in `turnt.toml`:
 - `output`.
   This is a mapping from extensions to output files to collect from each test.
   For example, use `output.txt = "my_output.txt"` to collect `my_output.txt` after each text extension and save it in `<test-name>.txt`.
-  Use `-` to indicate the command's standard output.
+  Use `-` to indicate the command's standard output and `2` to indicate its standard error.
   The default is like `output.out = "-"`, i.e., capture stdout and save it in `<test-name>.out`.
   You can include this yourself or omit if if you want to ignore the standard output.
+- `return_code`.
+  The expected exit status for the command. By default, 0.
 
 Equivalently, you can embed options in test files themselves:
 
@@ -59,6 +61,7 @@ Equivalently, you can embed options in test files themselves:
 - `OUT: <ext> <filename>` overrides `output` from the configuration.
   You can specify multiple files this way: one line per file.
 - `ARGS: <arguments>`. Add arguments to a configured command (see below).
+- `RETURN: <code>`. The expected exit status.
 
 In commands and filenames, you can use certain patterns that get substituted with details about the tests:
 
