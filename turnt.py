@@ -252,16 +252,9 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
         return proc.returncode == 0
     else:
         try:
-            def desugar(v):
-                if v == STDOUT:
-                    return stdout.name
-                elif v == STDERR:
-                    return stderr.name
-                else:
-                    return v
-
-            # Replace "-" with the standard output file.
-            out_files = {k: desugar(v) for (k, v) in out_files.items()}
+            # Replace shorthands with the standard output/error files.
+            sugar = {STDOUT: stdout.name, STDERR: stderr.name}
+            out_files = {k: sugar.get(v, v) for (k, v) in out_files.items()}
 
             return check_result(path, idx, save, diff, proc, out_files,
                                 return_code)
