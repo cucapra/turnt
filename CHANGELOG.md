@@ -1,7 +1,7 @@
 Turnt Changelog
 ===============
 
-1.2.0 (unreleased)
+1.2.0 (2019-09-24)
 ------------------
 
 - A new `--args` option lets you override the `args` field that otherwise comes from in-file settings.

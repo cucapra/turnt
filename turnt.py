@@ -12,7 +12,7 @@ import sys
 import re
 import contextlib
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_CMD = ['diff', '--new-file']
