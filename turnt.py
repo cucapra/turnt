@@ -243,7 +243,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
             cmd,
             shell=True,
             stdout=None if dump else stdout,
-            stderr=None if verbose else stderr,
+            stderr=None if dump else stderr,
             cwd=os.path.abspath(os.path.dirname(path)),
         )
 
@@ -252,6 +252,12 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
         return proc.returncode == 0
     else:
         try:
+            # If we're in verbose but not dump/print mode, errors need to be 
+            # copied from the temporary file to standard out
+            if verbose and not dump:
+                with open(stderr.name) as f:
+                    sys.stdout.write(f.read())
+
             # Replace shorthands with the standard output/error files.
             sugar = {STDOUT: stdout.name, STDERR: stderr.name}
             out_files = {k: sugar.get(v, v) for (k, v) in out_files.items()}
