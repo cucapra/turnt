@@ -1,0 +1,3 @@
+command = "echo {base} {args} ; cat {filename}"
+output.out = "-"
+output.txt = "other_file.txt"

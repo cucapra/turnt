@@ -138,7 +138,7 @@ def get_return_code(config, contents):
     if return_code:
         return int(return_code)
     elif "return_code" in config:
-        return_code = int(config["output"])
+        return int(config["return_code"])
     else:
         return 0
 
