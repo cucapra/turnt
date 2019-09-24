@@ -174,8 +174,11 @@ def check_result(name, idx, save, diff, proc, out_files, return_code):
     # If the command has a non-zero exit code, fail.
     if proc.returncode != return_code:
         print('not ok {} - {}'.format(idx, name))
-        print('# exit code: {}, expected: {}'.format(proc.returncode,
-                                                     return_code))
+        if return_code:
+            print('# exit code: {}, expected: {}'.format(proc.returncode,
+                                                         return_code))
+        else:
+            print('# exit code: {}'.format(proc.returncode))
         if proc.stderr:
             sys.stderr.buffer.write(proc.stderr)
             sys.stderr.buffer.flush()
