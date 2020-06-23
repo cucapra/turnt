@@ -54,6 +54,8 @@ These options are available in `turnt.toml`:
   You can include this yourself or omit if if you want to ignore the standard output.
 - `return_code`.
   The expected exit status for the command. By default, 0.
+- `diff`.
+  The command to use for `turnt --diff` output.
 
 Equivalently, you can embed options in test files themselves:
 

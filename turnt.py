@@ -15,7 +15,7 @@ import contextlib
 __version__ = '1.2.0'
 
 CONFIG_FILENAME = 'turnt.toml'
-DIFF_CMD = ['diff', '--new-file']
+DIFF_DEFAULT = 'diff --new-file'
 STDOUT = '-'
 STDERR = '2'
 
@@ -167,7 +167,8 @@ def load_options(config, path, args=None):
     )
 
 
-def check_result(name, idx, save, diff, proc, out_files, return_code):
+def check_result(name, idx, save, diff, proc, out_files, return_code,
+                 diff_cmd):
     """Check the results of a single test and print the outcome. Return
     a bool indicating success.
     """
@@ -189,7 +190,7 @@ def check_result(name, idx, save, diff, proc, out_files, return_code):
     for saved_file, output_file in out_files.items():
         # Diff the actual & expected output.
         if diff:
-            subprocess.run(DIFF_CMD + [saved_file, output_file])
+            subprocess.run(diff_cmd + [saved_file, output_file])
 
         # Read actual & expected output and compare.
         with open(output_file) as f:
@@ -225,6 +226,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
     """
     config = load_config(path)
     cmd, out_files, return_code = load_options(config, path, args)
+    diff_cmd = shlex.split(config.get('diff', DIFF_DEFAULT))
 
     # Show the command if we're dumping the output.
     if dump:
@@ -252,7 +254,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
         return proc.returncode == 0
     else:
         try:
-            # If we're in verbose but not dump/print mode, errors need to be 
+            # If we're in verbose but not dump/print mode, errors need to be
             # copied from the temporary file to standard out
             if verbose and not dump:
                 with open(stderr.name) as f:
@@ -263,7 +265,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
             out_files = {k: sugar.get(v, v) for (k, v) in out_files.items()}
 
             return check_result(path, idx, save, diff, proc, out_files,
-                                return_code)
+                                return_code, diff_cmd)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
