@@ -15,7 +15,7 @@ import contextlib
 __version__ = '1.2.0'
 
 CONFIG_FILENAME = 'turnt.toml'
-DIFF_DEFAULT = 'diff --new-file'
+DIFF_DEFAULT = 'diff --new-file --unified'
 STDOUT = '-'
 STDERR = '2'
 
