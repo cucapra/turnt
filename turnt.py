@@ -91,25 +91,28 @@ def format_output_path(name, path):
     )
 
 
-def format_expected_path(ext, path):
+def format_expected_path(ext, path, out_base):
     """Generate the location to use for the *expected* output file for a
     given test `path` and output extension key `ext`.
 
     The resulting path is located "next to" the test file, using its
     basename with a different extension---for example `./foo/bar.t`
     becomes `./foo/bar.ext`. If the test path is a directory, the file is
-    placed *inside* this directory.
+    placed *inside* this directory, and `out_base` is used for the filename
+    instead of the test name (e.g., `./foo/bar.t/out_base.ext`).
     """
-    filename = os.path.basename(path)
-    base, _ = os.path.splitext(filename)
-
-    # When the test is a directory, place results there. Otherwise, when
-    # the test is a file, put results *alongside* the file, in the same
-    # parent directory.
+    # When the test is a directory, place results there and use
+    # `out_base`. Otherwise, when the test is a file, put results
+    # *alongside* the file, in the same parent directory, and use the
+    # test filename to generate the output filename (ignoring
+    # `out_base`).
     if os.path.isdir(path):
         dirname = path
+        base = out_base
     else:
         dirname = os.path.dirname(path)
+        filename = os.path.basename(path)
+        base, _ = os.path.splitext(filename)
 
     return os.path.join(dirname, '{}.{}'.format(base, ext))
 
@@ -120,6 +123,7 @@ def get_out_files(config, path, contents):
     """
     outputs = extract_options(contents, 'out')
 
+    # Get the mapping from extensions to output files.
     if outputs:
         outputs = {k: v for k, v in (o.split() for o in outputs)}
     elif "output" in config:
@@ -128,7 +132,11 @@ def get_out_files(config, path, contents):
         # If no outputs given anywhere, assume standard out.
         outputs = {"out": STDOUT}
 
-    return {format_expected_path(k, path): format_output_path(v, path)
+    # Get the base to use for directory test outputs.
+    out_base = config.get("out_base", "out")
+
+    return {format_expected_path(k, path, out_base):
+            format_output_path(v, path)
             for (k, v) in outputs.items()}
 
 

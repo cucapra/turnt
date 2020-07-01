@@ -75,6 +75,8 @@ In commands and filenames, you can use certain patterns that get substituted wit
 
 If you need multiple files for a test, you can use a directory instead of a file.
 Turnt will not attempt to read embedded comment options from directories, and outputs will be placed *inside* the test directory instead of adjacent to it.
+Output filenames will be like `out.ext` inside that directory.
+(The `out_base` config option overrides that base filename and is `out` by default.)
 
 
 Command Line
