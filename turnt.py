@@ -162,11 +162,21 @@ def load_options(config, path, args=None):
     `args` can override the arguments for the command, which otherwise
     come from the file itself.
     """
+    # Load the contents for option parsing either from the file itself
+    # or, if the test is a directory, from a file contained therein.
     if os.path.isfile(path):
         with open(path) as f:
             contents = f.read()
     else:
-        contents = ''
+        if 'opts_file' in config:
+            opts_path = os.path.join(path, config['opts_file'])
+            try:
+                with open(opts_path) as f:
+                    contents = f.read()
+            except IOError:
+                contents = ''
+        else:
+            contents = ''
 
     return (
         get_command(config, path, contents, args),
