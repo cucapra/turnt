@@ -74,7 +74,14 @@ In commands and filenames, you can use certain patterns that get substituted wit
 - `{args}`: Extra arguments specified using `ARGS:` in the test file.
 
 If you need multiple files for a test, you can use a directory instead of a file.
-Turnt will not attempt to read embedded comment options from directories, and outputs will be placed *inside* the test directory instead of adjacent to it.
+Outputs will be placed *inside* the test directory instead of adjacent to it.
+Output filenames will be like `out.ext` inside that directory.
+There are two configurations just for dealing with directory tests:
+
+- `out_base`.
+  The basename for output files in directory tests: by default, `out`.
+- `opts_file`.
+  The filename to read inside of a directory test to parse inline options.
 
 
 Command Line
