@@ -11,6 +11,7 @@ import shutil
 import sys
 import re
 import contextlib
+from concurrent import futures
 
 __version__ = '1.4.0'
 
@@ -300,14 +301,30 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
               help='Do not suppress stderr from successful commands.')
 @click.option('-a', '--args',
               help='Override arguments for test commands.')
+@click.option('-j', '--parallel',
+              help='Run tests in parallel.')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
-def turnt(file, save, diff, verbose, dump, args):
+def turnt(file, save, diff, verbose, dump, args, parallel):
     if file and not dump:
         print('1..{}'.format(len(file)))
 
     success = True
-    for idx, path in enumerate(file):
-        success &= run_test(path, idx + 1, save, diff, verbose, dump, args)
+    if parallel:
+        # Parallel test execution.
+        with futures.ThreadPoolExecutor() as pool:
+            futs = []
+            for idx, path in enumerate(file):
+                futs.append(pool.submit(
+                    run_test,
+                    path, idx + 1, save, diff, verbose, dump, args
+                ))
+            for fut in futures.as_completed(futs):
+                success &= fut.result()
+
+    else:
+        # Simple sequential loop.
+        for idx, path in enumerate(file):
+            success &= run_test(path, idx + 1, save, diff, verbose, dump, args)
 
     sys.exit(0 if success else 1)
 
