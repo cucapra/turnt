@@ -189,20 +189,20 @@ def load_options(config, path, args=None):
 def check_result(name, idx, save, diff, proc, out_files, return_code,
                  diff_cmd):
     """Check the results of a single test and print the outcome. Return
-    a bool indicating success.
+    a bool indicating success and a TAP message as a list of strings.
     """
     # If the command has a non-zero exit code, fail.
     if proc.returncode != return_code:
-        print('not ok {} - {}'.format(idx, name))
+        msg = ['not ok {} - {}'.format(idx, name)]
         if return_code:
-            print('# exit code: {}, expected: {}'.format(proc.returncode,
-                                                         return_code))
+            msg.append('# exit code: {}, expected: {}'.format(proc.returncode,
+                                                              return_code))
         else:
-            print('# exit code: {}'.format(proc.returncode))
+            msg.append('# exit code: {}'.format(proc.returncode))
         if proc.stderr:
             sys.stderr.buffer.write(proc.stderr)
             sys.stderr.buffer.flush()
-        return False
+        return False, msg
 
     # Check whether outputs match.
     success = True
@@ -231,17 +231,16 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
     line = '{} {} - {}'.format('ok' if success else 'not ok', idx, name)
     if update:
         line += ' # skip: updated {}'.format(', '.join(out_files.keys()))
-    print(line)
 
-    return success
+    return success, [line]
 
 
 def run_test(path, idx, save, diff, verbose, dump, args=None):
     """Run a single test.
 
-    Check the output and print a TAP summary line, unless `dump` is
+    Check the output and produce a TAP summary line, unless `dump` is
     enabled, in which case we just print the output. Return a bool
-    indicating success.
+    indicating success and the message as a list of strings.
     """
     config = load_config(path)
     cmd, out_files, return_code = load_options(config, path, args)
@@ -270,7 +269,7 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
 
     # Check results.
     if dump:
-        return proc.returncode == 0
+        return proc.returncode == 0, []
     else:
         try:
             # If we're in verbose but not dump/print mode, errors need to be
@@ -318,13 +317,19 @@ def turnt(file, save, diff, verbose, dump, args, parallel):
                     run_test,
                     path, idx + 1, save, diff, verbose, dump, args
                 ))
-            for fut in futures.as_completed(futs):
-                success &= fut.result()
+            for fut in futs:
+                sc, msg = fut.result()
+                success &= sc
+                for line in msg:
+                    print(line)
 
     else:
         # Simple sequential loop.
         for idx, path in enumerate(file):
-            success &= run_test(path, idx + 1, save, diff, verbose, dump, args)
+            sc, msg = run_test(path, idx + 1, save, diff, verbose, dump, args)
+            success &= sc
+            for line in msg:
+                print(line)
 
     sys.exit(0 if success else 1)
 
