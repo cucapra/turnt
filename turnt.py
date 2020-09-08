@@ -13,7 +13,7 @@ import re
 import contextlib
 from concurrent import futures
 
-__version__ = '1.4.0'
+__version__ = '1.5.0'
 
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_DEFAULT = 'diff --new-file --unified'
