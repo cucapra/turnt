@@ -13,7 +13,7 @@ import re
 import contextlib
 from concurrent import futures
 
-__version__ = '1.5.0'
+__version__ = '1.6.0'
 
 CONFIG_FILENAME = 'turnt.toml'
 DIFF_DEFAULT = 'diff --new-file --unified'
@@ -205,13 +205,13 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
         return False, msg
 
     # Check whether outputs match.
-    success = True
+    changes = []
     for saved_file, output_file in out_files.items():
         # Diff the actual & expected output.
         if diff:
             subprocess.run(diff_cmd + [saved_file, output_file])
 
-        # Read actual & expected output and compare.
+        # Read actual & expected output.
         with open(output_file) as f:
             actual = f.read()
         if os.path.isfile(saved_file):
@@ -219,7 +219,10 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
                 expected = f.read()
         else:
             expected = None
-        success &= actual == expected
+
+        # Compare.
+        if actual != expected:
+            changes.append(saved_file)
 
     # Save the new output, if requested.
     update = save and not success
@@ -228,11 +231,13 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
             shutil.copy(output_file, saved_file)
 
     # Show TAP success line.
-    line = '{} {} - {}'.format('ok' if success else 'not ok', idx, name)
+    line = '{} {} - {}'.format('ok' if not changes else 'not ok', idx, name)
     if update:
         line += ' # skip: updated {}'.format(', '.join(out_files.keys()))
+    if changes:
+        line += '\n# differing: {}'.format(', '.join(changes))
 
-    return success, [line]
+    return not changes, [line]
 
 
 def run_test(path, idx, save, diff, verbose, dump, args=None):
