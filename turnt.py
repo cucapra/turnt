@@ -205,7 +205,8 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
         return False, msg
 
     # Check whether outputs match.
-    changes = []
+    differing = []
+    missing = []
     for saved_file, output_file in out_files.items():
         # Diff the actual & expected output.
         if diff:
@@ -222,7 +223,9 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
 
         # Compare.
         if actual != expected:
-            changes.append(saved_file)
+            differing.append(saved_file)
+        if expected is None:
+            missing.append(saved_file)
 
     # Save the new output, if requested.
     update = save and not success
@@ -230,14 +233,18 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
         for saved_file, output_file in out_files.items():
             shutil.copy(output_file, saved_file)
 
-    # Show TAP success line.
-    line = '{} {} - {}'.format('ok' if not changes else 'not ok', idx, name)
+    # Show TAP success line and annotations.
+    line = '{} {} - {}'.format('ok' if not differing else 'not ok', idx, name)
     if update:
         line += ' # skip: updated {}'.format(', '.join(out_files.keys()))
-    if changes:
-        line += '\n# differing: {}'.format(', '.join(changes))
 
-    return not changes, [line]
+    diff_exist = [fn for fn in differing if fn not in missing]
+    if diff_exist:
+        line += '\n# differing: {}'.format(', '.join(diff_exist))
+    if missing:
+        line += '\n# missing: {}'.format(', '.join(missing))
+
+    return not differing, [line]
 
 
 def run_test(path, idx, save, diff, verbose, dump, args=None):
