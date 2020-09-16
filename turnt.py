@@ -228,7 +228,7 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
             missing.append(saved_file)
 
     # Save the new output, if requested.
-    update = save and not success
+    update = save and differing
     if update:
         for saved_file, output_file in out_files.items():
             shutil.copy(output_file, saved_file)
