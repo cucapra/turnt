@@ -94,6 +94,7 @@ These are the command-line options:
 - `--verbose` or `-v`: Disable Turnt's default behavior where it will suppress test commands' stderr output. The result is more helpful but harder to read.
 - `--print` or `-p`: Instead of checking test results, just run the command and show the output directly. This can be useful (especially in combination with `-v`) when iterating on a test interactively.
 - `--args` or `-a`: Override the `args` string that gets interpolated into commands, which normally comes from in-file comments.
+- `--config` or `-c`: Look for this config filename instead of the default `turnt.toml`.
 
 
 TAP
