@@ -5,6 +5,7 @@ Turnt Changelog
 ----------------------
 
 - Add comments to the TAP output to indicate detected output differences.
+- Add a `--config` command-line option.
 
 1.5.0 (2020-09-08)
 ------------------
