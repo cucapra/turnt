@@ -15,17 +15,16 @@ from concurrent import futures
 
 __version__ = '1.6.0'
 
-CONFIG_FILENAME = 'turnt.toml'
 DIFF_DEFAULT = 'diff --new-file --unified'
 STDOUT = '-'
 STDERR = '2'
 
 
-def load_config(path):
+def load_config(path, config_name):
     """Load the configuration for a test at the given path.
     """
     parent = os.path.dirname(path)
-    config_path = os.path.join(parent, CONFIG_FILENAME)
+    config_path = os.path.join(parent, config_name)
     if os.path.isfile(config_path):
         with open(config_path) as f:
             return tomlkit.loads(f.read())
@@ -247,14 +246,14 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
     return not differing, [line]
 
 
-def run_test(path, idx, save, diff, verbose, dump, args=None):
+def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
     """Run a single test.
 
     Check the output and produce a TAP summary line, unless `dump` is
     enabled, in which case we just print the output. Return a bool
     indicating success and the message as a list of strings.
     """
-    config = load_config(path)
+    config = load_config(path, config_name)
     cmd, out_files, return_code = load_options(config, path, args)
     diff_cmd = shlex.split(config.get('diff', DIFF_DEFAULT))
 
@@ -314,8 +313,10 @@ def run_test(path, idx, save, diff, verbose, dump, args=None):
               help='Override arguments for test commands.')
 @click.option('-j', '--parallel',
               help='Run tests in parallel.')
+@click.option('-c', '--config', default='turnt.toml',
+              help='Name of the config file. Default: turnt.toml')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
-def turnt(file, save, diff, verbose, dump, args, parallel):
+def turnt(file, save, diff, verbose, dump, args, parallel, config):
     if file and not dump:
         print('1..{}'.format(len(file)))
 
@@ -327,7 +328,7 @@ def turnt(file, save, diff, verbose, dump, args, parallel):
             for idx, path in enumerate(file):
                 futs.append(pool.submit(
                     run_test,
-                    path, idx + 1, save, diff, verbose, dump, args
+                    path, config, idx + 1, save, diff, verbose, dump, args
                 ))
             for fut in futs:
                 sc, msg = fut.result()
@@ -338,7 +339,7 @@ def turnt(file, save, diff, verbose, dump, args, parallel):
     else:
         # Simple sequential loop.
         for idx, path in enumerate(file):
-            sc, msg = run_test(path, idx + 1, save, diff, verbose, dump, args)
+            sc, msg = run_test(path, config, idx + 1, save, diff, verbose, dump, args)
             success &= sc
             for line in msg:
                 print(line)
