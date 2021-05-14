@@ -316,7 +316,7 @@ def cli():
               help='Do not suppress stderr from successful commands.')
 @click.option('-a', '--args',
               help='Override arguments for test commands.')
-@click.option('-j', '--parallel',
+@click.option('-j', '--parallel', is_flag=True, default=False,
               help='Run tests in parallel.')
 @click.option('-c', '--config', default='turnt.toml',
               help='Name of the config file. Default: turnt.toml')
