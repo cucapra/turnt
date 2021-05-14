@@ -18,6 +18,7 @@ __version__ = '1.6.0'
 DIFF_DEFAULT = 'diff --new-file --unified'
 STDOUT = '-'
 STDERR = '2'
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 def load_config(path, config_name):
@@ -300,7 +301,11 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
             os.unlink(stderr.name)
 
 
-@click.command()
+def cli():
+      pass
+
+
+@click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--save', is_flag=True, default=False,
               help='Save new outputs (overwriting old).')
 @click.option('--diff', is_flag=True, default=False,
