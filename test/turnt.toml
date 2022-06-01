@@ -1,0 +1,1 @@
+command = "echo base config ; cat {filename}"
