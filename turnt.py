@@ -16,6 +16,7 @@ from concurrent import futures
 __version__ = '1.6.0'
 
 DIFF_DEFAULT = 'diff --new-file --unified'
+CONFIG_NAME = 'turnt.toml'
 STDOUT = '-'
 STDERR = '2'
 
@@ -313,8 +314,8 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
               help='Override arguments for test commands.')
 @click.option('-j', '--parallel',
               help='Run tests in parallel.')
-@click.option('-c', '--config', default='turnt.toml',
-              help='Name of the config file. Default: turnt.toml')
+@click.option('-c', '--config', default=CONFIG_NAME,
+              help=f'Name of the config file. Default: {CONFIG_NAME}')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
 def turnt(file, save, diff, verbose, dump, args, parallel, config):
     if file and not dump:
@@ -339,7 +340,9 @@ def turnt(file, save, diff, verbose, dump, args, parallel, config):
     else:
         # Simple sequential loop.
         for idx, path in enumerate(file):
-            sc, msg = run_test(path, config, idx + 1, save, diff, verbose, dump, args)
+            sc, msg = run_test(
+                path, config, idx + 1, save, diff, verbose, dump, args
+            )
             success &= sc
             for line in msg:
                 print(line)
