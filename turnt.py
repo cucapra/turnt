@@ -21,16 +21,36 @@ STDOUT = '-'
 STDERR = '2'
 
 
+def ancestors(path):
+    """Generate enclosing directories of a given path.
+
+    We generate directory names "inside out" starting with the immediate
+    parent directory (not `path` itself). The walk stops at any
+    filesystem boundary.
+    """
+    path = os.path.abspath(path)
+    while True:
+        new_path = os.path.dirname(path)
+        if new_path == path:
+            break
+        path = new_path
+
+        yield path
+        if os.path.ismount(path):
+            break
+
+
 def load_config(path, config_name):
     """Load the configuration for a test at the given path.
     """
-    parent = os.path.dirname(path)
-    config_path = os.path.join(parent, config_name)
-    if os.path.isfile(config_path):
-        with open(config_path) as f:
-            return tomlkit.loads(f.read())
-    else:
-        return {}
+    for dirpath in ancestors(path):
+        config_path = os.path.join(dirpath, config_name)
+        if os.path.isfile(config_path):
+            with open(config_path) as f:
+                return tomlkit.loads(f.read())
+
+    # No configuration; use defaults and embedded options only.
+    return {}
 
 
 def extract_options(text, key):
