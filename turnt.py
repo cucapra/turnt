@@ -42,15 +42,17 @@ def ancestors(path):
 
 def load_config(path, config_name):
     """Load the configuration for a test at the given path.
+
+    Return the configuration value itself and the containing directory.
     """
     for dirpath in ancestors(path):
         config_path = os.path.join(dirpath, config_name)
         if os.path.isfile(config_path):
             with open(config_path) as f:
-                return tomlkit.loads(f.read())
+                return tomlkit.loads(f.read()), dirpath
 
     # No configuration; use defaults and embedded options only.
-    return {}
+    return {}, os.path.dirname(os.path.abspath(path))
 
 
 def extract_options(text, key):
@@ -77,15 +79,15 @@ def extract_single_option(text, key):
         return None
 
 
-def get_command(config, path, contents, args=None, err=None):
+def get_command(config, config_dir, path, contents, args=None, err=None):
     """Get the shell command to run for a given test, as a string.
     """
     cmd = extract_single_option(contents, 'cmd') or config['command']
     args = args or extract_single_option(contents, 'args') or ''
 
     # Construct the command.
-    filename = os.path.basename(path)
-    base, _ = os.path.splitext(filename)
+    filename = os.path.relpath(path, config_dir)
+    base, _ = os.path.splitext(os.path.basename(filename))
     return cmd.format(
         filename=shlex.quote(filename),
         base=shlex.quote(base),
@@ -172,7 +174,7 @@ def get_return_code(config, contents):
         return 0
 
 
-def load_options(config, path, args=None):
+def load_options(config, config_dir, path, args=None):
     """Extract the options embedded in the test file, which can override
     the options in the configuration. Return the test command and an
     output file mapping.
@@ -200,7 +202,7 @@ def load_options(config, path, args=None):
             contents = ''
 
     return (
-        get_command(config, path, contents, args),
+        get_command(config, config_dir, path, contents, args),
         get_out_files(config, path, contents),
         get_return_code(config, contents),
     )
@@ -274,8 +276,8 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
     enabled, in which case we just print the output. Return a bool
     indicating success and the message as a list of strings.
     """
-    config = load_config(path, config_name)
-    cmd, out_files, return_code = load_options(config, path, args)
+    config, config_dir = load_config(path, config_name)
+    cmd, out_files, return_code = load_options(config, config_dir, path, args)
     diff_cmd = shlex.split(config.get('diff', DIFF_DEFAULT))
 
     # Show the command if we're dumping the output.
@@ -296,7 +298,7 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
             shell=True,
             stdout=None if dump else stdout,
             stderr=None if dump else stderr,
-            cwd=os.path.abspath(os.path.dirname(path)),
+            cwd=config_dir,
         )
 
     # Check results.

@@ -48,6 +48,8 @@ These options are available in `turnt.toml`:
 
 - `command`.
   This is a shell command to run for each test input.
+  The working directory for the command is the location of the `turnt.toml` configuration file, if any.
+  If there's no configuration file, then it's the location of the test file itself.
 - `output`.
   This is a mapping from extensions to output files to collect from each test.
   For example, use `output.txt = "my_output.txt"` to collect `my_output.txt` after each text extension and save it in `<test-name>.txt`.
@@ -71,7 +73,7 @@ Equivalently, you can embed options in test files themselves:
 
 In commands and filenames, you can use certain patterns that get substituted with details about the tests:
 
-- `{filename}`: The name of the test file (without the directory part).
+- `{filename}`: The name of the test file, relative to the command working directory.
 - `{base}`: Just the basename of the test file (no extension).
 - `{args}`: Extra arguments specified using `ARGS:` in the test file.
 
