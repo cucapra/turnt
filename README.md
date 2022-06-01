@@ -42,6 +42,8 @@ Or, if you want to work on Turnt, you can install [Flit][], clone this repositor
 Details
 -------
 
+Turnt looks for a configuration file called `turnt.toml` in any of the ancestor directories of your test.
+It can be alongside the test file or in any containing directory.
 These options are available in `turnt.toml`:
 
 - `command`.
