@@ -1,7 +1,7 @@
 Turnt Changelog
 ===============
 
-1.6.0 (in development)
+1.6.0 (2022-06-01)
 ----------------------
 
 - Add comments to the TAP output to indicate detected output differences.
