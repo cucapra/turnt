@@ -4,6 +4,8 @@ Turnt Changelog
 1.7.0 (in development)
 ----------------------
 
+- Search for `turnt.toml` configuration files in ancestor directories, not just in the same directory as the test.
+
 1.6.0 (2022-06-01)
 ------------------
 
