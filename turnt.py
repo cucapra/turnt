@@ -12,6 +12,7 @@ import sys
 import re
 import contextlib
 from concurrent import futures
+from typing import NamedTuple, List, Tuple
 
 __version__ = '1.7.0'
 
@@ -38,6 +39,15 @@ def ancestors(path):
         yield path
         if os.path.ismount(path):
             break
+
+
+class TestConfig(NamedTuple):
+    config_name: str
+    save: bool
+    diff: bool
+    verbose: bool
+    dump: bool
+    args: str
 
 
 def load_config(path, config_name):
@@ -269,24 +279,26 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
     return not differing, [line]
 
 
-def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
+def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
     """Run a single test.
 
     Check the output and produce a TAP summary line, unless `dump` is
     enabled, in which case we just print the output. Return a bool
-    indicating success and the message as a list of strings.
+    indicating success and the message.
     """
-    config, config_dir = load_config(path, config_name)
-    cmd, out_files, return_code = load_options(config, config_dir, path, args)
+    config, config_dir = load_config(path, cfg.config_name)
+    cmd, out_files, return_code = load_options(
+        config, config_dir, path, cfg.args
+    )
     diff_cmd = shlex.split(config.get('diff', DIFF_DEFAULT))
 
     # Show the command if we're dumping the output.
-    if dump:
+    if cfg.dump:
         print('$', cmd, file=sys.stderr)
 
     with contextlib.ExitStack() as stack:
         # Possibly use a temporary file for the output.
-        if not dump:
+        if not cfg.dump:
             stdout = tempfile.NamedTemporaryFile(delete=False)
             stderr = tempfile.NamedTemporaryFile(delete=False)
             stack.enter_context(stdout)
@@ -296,19 +308,19 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
         proc = subprocess.run(
             cmd,
             shell=True,
-            stdout=None if dump else stdout,
-            stderr=None if dump else stderr,
+            stdout=None if cfg.dump else stdout,
+            stderr=None if cfg.dump else stderr,
             cwd=config_dir,
         )
 
     # Check results.
-    if dump:
+    if cfg.dump:
         return proc.returncode == 0, []
     else:
         try:
             # If we're in verbose but not dump/print mode, errors need to be
             # copied from the temporary file to standard out
-            if verbose and not dump:
+            if cfg.verbose and not cfg.dump:
                 with open(stderr.name) as f:
                     sys.stdout.write(f.read())
 
@@ -316,11 +328,45 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
             sugar = {STDOUT: stdout.name, STDERR: stderr.name}
             out_files = {k: sugar.get(v, v) for (k, v) in out_files.items()}
 
-            return check_result(path, idx, save, diff, proc, out_files,
+            return check_result(path, idx, cfg.save, cfg.diff, proc, out_files,
                                 return_code, diff_cmd)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
+
+
+def run_tests(cfg: TestConfig, parallel: bool, test_files: List[str]) -> bool:
+    """Run all the tests in an entire suite, possibly in parallel.
+    """
+    if test_files and not cfg.dump:
+        print('1..{}'.format(len(test_files)))
+
+    if parallel:
+        # Parallel test execution.
+        success = True
+        with futures.ThreadPoolExecutor() as pool:
+            futs = []
+            for idx, path in enumerate(test_files):
+                futs.append(pool.submit(
+                    run_test,
+                    cfg, path, idx + 1
+                ))
+            for fut in futs:
+                sc, msg = fut.result()
+                success &= sc
+                for line in msg:
+                    print(line)
+        return success
+
+    else:
+        # Simple sequential loop.
+        success = True
+        for idx, path in enumerate(test_files):
+            sc, msg = run_test(cfg, path, idx + 1)
+            success &= sc
+            for line in msg:
+                print(line)
+        return success
 
 
 @click.command()
@@ -340,35 +386,15 @@ def run_test(path, config_name, idx, save, diff, verbose, dump, args=None):
               help=f'Name of the config file. Default: {CONFIG_NAME}')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
 def turnt(file, save, diff, verbose, dump, args, parallel, config):
-    if file and not dump:
-        print('1..{}'.format(len(file)))
-
-    success = True
-    if parallel:
-        # Parallel test execution.
-        with futures.ThreadPoolExecutor() as pool:
-            futs = []
-            for idx, path in enumerate(file):
-                futs.append(pool.submit(
-                    run_test,
-                    path, config, idx + 1, save, diff, verbose, dump, args
-                ))
-            for fut in futs:
-                sc, msg = fut.result()
-                success &= sc
-                for line in msg:
-                    print(line)
-
-    else:
-        # Simple sequential loop.
-        for idx, path in enumerate(file):
-            sc, msg = run_test(
-                path, config, idx + 1, save, diff, verbose, dump, args
-            )
-            success &= sc
-            for line in msg:
-                print(line)
-
+    cfg = TestConfig(
+        config_name=config,
+        save=save,
+        diff=diff,
+        verbose=verbose,
+        dump=dump,
+        args=args,
+    )
+    success = run_tests(cfg, parallel, file)
     sys.exit(0 if success else 1)
 
 
