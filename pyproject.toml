@@ -16,3 +16,8 @@ requires = [
 
 [tool.flit.scripts]
 turnt = "turnt:turnt"
+
+[tool.mypy]
+files = ["turnt.py"]
+disallow_untyped_calls = true
+disallow_untyped_defs = true
