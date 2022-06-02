@@ -51,6 +51,7 @@ class TestConfig(NamedTuple):
 
 
 class TestEnv(NamedTuple):
+    test_path: str
     command: str
     config_dir: str
     out_files: Dict[str, str]
@@ -224,6 +225,7 @@ def get_env(cfg: TestConfig, path: str) -> TestEnv:
             contents = ''
 
     return TestEnv(
+        path,
         get_command(config, config_dir, path, contents, cfg.args),
         config_dir,
         get_out_files(config, path, contents),
@@ -232,17 +234,20 @@ def get_env(cfg: TestConfig, path: str) -> TestEnv:
     )
 
 
-def check_result(name, idx, save, diff, proc, out_files, return_code,
-                 diff_cmd):
-    """Check the results of a single test and print the outcome. Return
-    a bool indicating success and a TAP message as a list of strings.
+def check_result(cfg: TestConfig, env: TestEnv,
+                 proc: subprocess.CompletedProcess,
+                 idx: int) -> Tuple[bool, List[str]]:
+    """Check the results of a single test and print the outcome.
+
+    Return a bool indicating success and a TAP message.
     """
     # If the command has a non-zero exit code, fail.
-    if proc.returncode != return_code:
-        msg = ['not ok {} - {}'.format(idx, name)]
-        if return_code:
-            msg.append('# exit code: {}, expected: {}'.format(proc.returncode,
-                                                              return_code))
+    if proc.returncode != env.return_code:
+        msg = ['not ok {} - {}'.format(idx, env.test_path)]
+        if env.return_code:
+            msg.append('# exit code: {}, expected: {}'.format(
+                proc.returncode, env.return_code,
+            ))
         else:
             msg.append('# exit code: {}'.format(proc.returncode))
         if proc.stderr:
@@ -253,10 +258,10 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
     # Check whether outputs match.
     differing = []
     missing = []
-    for saved_file, output_file in out_files.items():
+    for saved_file, output_file in env.out_files.items():
         # Diff the actual & expected output.
-        if diff:
-            subprocess.run(diff_cmd + [saved_file, output_file])
+        if cfg.diff:
+            subprocess.run(env.diff_cmd + [saved_file, output_file])
 
         # Read actual & expected output.
         with open(output_file) as f:
@@ -274,15 +279,19 @@ def check_result(name, idx, save, diff, proc, out_files, return_code,
             missing.append(saved_file)
 
     # Save the new output, if requested.
-    update = save and differing
+    update = cfg.save and differing
     if update:
-        for saved_file, output_file in out_files.items():
+        for saved_file, output_file in env.out_files.items():
             shutil.copy(output_file, saved_file)
 
     # Show TAP success line and annotations.
-    line = '{} {} - {}'.format('ok' if not differing else 'not ok', idx, name)
+    line = '{} {} - {}'.format(
+        'ok' if not differing else 'not ok',
+        idx,
+        env.test_path,
+    )
     if update:
-        line += ' # skip: updated {}'.format(', '.join(out_files.keys()))
+        line += ' # skip: updated {}'.format(', '.join(env.out_files.keys()))
 
     diff_exist = [fn for fn in differing if fn not in missing]
     if diff_exist:
@@ -338,9 +347,9 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
             sugar = {STDOUT: stdout.name, STDERR: stderr.name}
             out_files = {k: sugar.get(v, v)
                          for (k, v) in env.out_files.items()}
+            env = env._replace(out_files=out_files)
 
-            return check_result(path, idx, cfg.save, cfg.diff, proc, out_files,
-                                env.return_code, env.diff_cmd)
+            return check_result(cfg, env, proc, idx)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
