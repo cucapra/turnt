@@ -1,0 +1,3 @@
+# This is the config for the `subdir` test, which tests Turnt's ability to
+# find configurations in ancestor directories.
+command = "echo base config ; basename `pwd` ; cat {filename}"
