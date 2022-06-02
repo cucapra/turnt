@@ -12,7 +12,7 @@ import sys
 import re
 import contextlib
 from concurrent import futures
-from typing import NamedTuple, List, Tuple, Dict
+from typing import NamedTuple, List, Tuple, Dict, Iterator, Optional
 
 __version__ = '1.7.0'
 
@@ -22,7 +22,7 @@ STDOUT = '-'
 STDERR = '2'
 
 
-def ancestors(path):
+def ancestors(path: str) -> Iterator[str]:
     """Generate enclosing directories of a given path.
 
     We generate directory names "inside out" starting with the immediate
@@ -47,7 +47,7 @@ class TestConfig(NamedTuple):
     diff: bool
     verbose: bool
     dump: bool
-    args: str
+    args: Optional[str]
 
 
 class TestEnv(NamedTuple):
@@ -59,7 +59,7 @@ class TestEnv(NamedTuple):
     diff_cmd: List[str]
 
 
-def load_config(path, config_name):
+def load_config(path: str, config_name: str) -> Tuple[dict, str]:
     """Load the configuration for a test at the given path.
 
     Return the configuration value itself and the containing directory.
@@ -68,13 +68,13 @@ def load_config(path, config_name):
         config_path = os.path.join(dirpath, config_name)
         if os.path.isfile(config_path):
             with open(config_path) as f:
-                return tomlkit.loads(f.read()), dirpath
+                return dict(tomlkit.loads(f.read())), dirpath
 
     # No configuration; use defaults and embedded options only.
     return {}, os.path.dirname(os.path.abspath(path))
 
 
-def extract_options(text, key):
+def extract_options(text: str, key: str) -> List[str]:
     """Parse a config option(s) from the given text.
 
     Options are embedded in declarations like "KEY: value" that may
@@ -85,7 +85,7 @@ def extract_options(text, key):
     return re.findall(regex, text)
 
 
-def extract_single_option(text, key):
+def extract_single_option(text: str, key: str) -> Optional[str]:
     """Parse a single config option from the given text.
 
     The format is the same as for `extract_options`, but we return only
@@ -99,7 +99,7 @@ def extract_single_option(text, key):
 
 
 def get_command(config: dict, config_dir: str, path: str, contents: str,
-                args=None, err=None) -> str:
+                args: Optional[str]) -> str:
     """Get the shell command to run for a given test, as a string.
     """
     cmd = extract_single_option(contents, 'cmd') or config['command']
@@ -115,7 +115,7 @@ def get_command(config: dict, config_dir: str, path: str, contents: str,
     )
 
 
-def format_output_path(name, path):
+def format_output_path(name: str, path: str) -> str:
     """Substitute patterns in configured *actual* output filenames and
     produce a complete path (relative to `path`, which is the test
     file).
@@ -134,7 +134,7 @@ def format_output_path(name, path):
     )
 
 
-def format_expected_path(ext, path, out_base):
+def format_expected_path(ext: str, path: str, out_base: str) -> str:
     """Generate the location to use for the *expected* output file for a
     given test `path` and output extension key `ext`.
 
@@ -160,15 +160,14 @@ def format_expected_path(ext, path, out_base):
     return os.path.join(dirname, '{}.{}'.format(base, ext))
 
 
-def get_out_files(config, path, contents) -> Dict[str, str]:
+def get_out_files(config: dict, path: str, contents: str) -> Dict[str, str]:
     """Get the mapping from saved output files to expected output files
     for the test.
     """
-    outputs = extract_options(contents, 'out')
-
     # Get the mapping from extensions to output files.
-    if outputs:
-        outputs = {k: v for k, v in (o.split() for o in outputs)}
+    output_strs = extract_options(contents, 'out')
+    if output_strs:
+        outputs = {k: v for k, v in (o.split() for o in output_strs)}
     elif "output" in config:
         outputs = config["output"]
     else:
@@ -183,7 +182,7 @@ def get_out_files(config, path, contents) -> Dict[str, str]:
             for (k, v) in outputs.items()}
 
 
-def get_return_code(config, contents) -> int:
+def get_return_code(config: dict, contents: str) -> int:
     return_code = extract_single_option(contents, 'return')
 
     if return_code:
@@ -405,7 +404,8 @@ def run_tests(cfg: TestConfig, parallel: bool, test_files: List[str]) -> bool:
 @click.option('-c', '--config', default=CONFIG_NAME,
               help=f'Name of the config file. Default: {CONFIG_NAME}')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
-def turnt(file, save, diff, verbose, dump, args, parallel, config):
+def turnt(file: List[str], save: bool, diff: bool, verbose: bool, dump: bool,
+          args: Optional[str], parallel: bool, config: str) -> None:
     cfg = TestConfig(
         config_name=config,
         save=save,
