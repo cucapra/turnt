@@ -22,6 +22,28 @@ STDOUT = '-'
 STDERR = '2'
 
 
+class TestConfig(NamedTuple):
+    """The setup for a test run (which consists of many tests).
+    """
+    config_name: str
+    save: bool
+    diff: bool
+    verbose: bool
+    dump: bool
+    args: Optional[str]
+
+
+class TestEnv(NamedTuple):
+    """The configuration for running a specific test.
+    """
+    test_path: str
+    command: str
+    config_dir: str
+    out_files: Dict[str, str]
+    return_code: int
+    diff_cmd: List[str]
+
+
 def ancestors(path: str) -> Iterator[str]:
     """Generate enclosing directories of a given path.
 
@@ -39,24 +61,6 @@ def ancestors(path: str) -> Iterator[str]:
         yield path
         if os.path.ismount(path):
             break
-
-
-class TestConfig(NamedTuple):
-    config_name: str
-    save: bool
-    diff: bool
-    verbose: bool
-    dump: bool
-    args: Optional[str]
-
-
-class TestEnv(NamedTuple):
-    test_path: str
-    command: str
-    config_dir: str
-    out_files: Dict[str, str]
-    return_code: int
-    diff_cmd: List[str]
 
 
 def load_config(path: str, config_name: str) -> Tuple[dict, str]:
