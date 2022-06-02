@@ -12,7 +12,7 @@ import sys
 import re
 import contextlib
 from concurrent import futures
-from typing import NamedTuple, List, Tuple
+from typing import NamedTuple, List, Tuple, Dict
 
 __version__ = '1.7.0'
 
@@ -48,6 +48,12 @@ class TestConfig(NamedTuple):
     verbose: bool
     dump: bool
     args: str
+
+
+class TestEnv(NamedTuple):
+    command: str
+    out_files: Dict[str, str]
+    return_code: int
 
 
 def load_config(path, config_name):
@@ -89,7 +95,8 @@ def extract_single_option(text, key):
         return None
 
 
-def get_command(config, config_dir, path, contents, args=None, err=None):
+def get_command(config: dict, config_dir: str, path: str, contents: str,
+                args=None, err=None) -> str:
     """Get the shell command to run for a given test, as a string.
     """
     cmd = extract_single_option(contents, 'cmd') or config['command']
@@ -150,7 +157,7 @@ def format_expected_path(ext, path, out_base):
     return os.path.join(dirname, '{}.{}'.format(base, ext))
 
 
-def get_out_files(config, path, contents):
+def get_out_files(config, path, contents) -> Dict[str, str]:
     """Get the mapping from saved output files to expected output files
     for the test.
     """
@@ -173,7 +180,7 @@ def get_out_files(config, path, contents):
             for (k, v) in outputs.items()}
 
 
-def get_return_code(config, contents):
+def get_return_code(config, contents) -> int:
     return_code = extract_single_option(contents, 'return')
 
     if return_code:
@@ -184,13 +191,13 @@ def get_return_code(config, contents):
         return 0
 
 
-def load_options(config, config_dir, path, args=None):
-    """Extract the options embedded in the test file, which can override
-    the options in the configuration. Return the test command and an
-    output file mapping.
+def get_env(config: dict, config_dir: str, path: str, args=None) -> TestEnv:
+    """Get the test environment for a specific test.
 
-    The path need not exist or be a file. If it's a directory or does
-    not exist, no options are extracted (and the defaults are used).
+    This extracts the options embedded in the test file, which can
+    override the options in the configuration. The path need not exist
+    or be a file. If it's a directory or does not exist, no options are
+    extracted (and the defaults are used).
 
     `args` can override the arguments for the command, which otherwise
     come from the file itself.
@@ -211,7 +218,7 @@ def load_options(config, config_dir, path, args=None):
         else:
             contents = ''
 
-    return (
+    return TestEnv(
         get_command(config, config_dir, path, contents, args),
         get_out_files(config, path, contents),
         get_return_code(config, contents),
@@ -287,14 +294,12 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
     indicating success and the message.
     """
     config, config_dir = load_config(path, cfg.config_name)
-    cmd, out_files, return_code = load_options(
-        config, config_dir, path, cfg.args
-    )
+    env = get_env(config, config_dir, path, cfg.args)
     diff_cmd = shlex.split(config.get('diff', DIFF_DEFAULT))
 
     # Show the command if we're dumping the output.
     if cfg.dump:
-        print('$', cmd, file=sys.stderr)
+        print('$', env.command, file=sys.stderr)
 
     with contextlib.ExitStack() as stack:
         # Possibly use a temporary file for the output.
@@ -306,7 +311,7 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
 
         # Run the command.
         proc = subprocess.run(
-            cmd,
+            env.command,
             shell=True,
             stdout=None if cfg.dump else stdout,
             stderr=None if cfg.dump else stderr,
@@ -326,10 +331,11 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
 
             # Replace shorthands with the standard output/error files.
             sugar = {STDOUT: stdout.name, STDERR: stderr.name}
-            out_files = {k: sugar.get(v, v) for (k, v) in out_files.items()}
+            out_files = {k: sugar.get(v, v)
+                         for (k, v) in env.out_files.items()}
 
             return check_result(path, idx, cfg.save, cfg.diff, proc, out_files,
-                                return_code, diff_cmd)
+                                env.return_code, diff_cmd)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
