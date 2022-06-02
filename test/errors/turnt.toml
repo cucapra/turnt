@@ -1,2 +1,2 @@
 output.out = "2"
-return_code = "1"
+return_code = 42

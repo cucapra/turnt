@@ -8,7 +8,7 @@ author = "Adrian Sampson"
 author-email = "asampson@cs.cornell.edu"
 home-page = "https://github.com/cucapra/turnt"
 description-file = "README.md"
-requires-python = ">=3.4"
+requires-python = ">=3.6"
 requires = [
     "click",
     "tomlkit",
@@ -16,3 +16,8 @@ requires = [
 
 [tool.flit.scripts]
 turnt = "turnt:turnt"
+
+[tool.mypy]
+files = ["turnt.py"]
+disallow_untyped_calls = true
+disallow_untyped_defs = true

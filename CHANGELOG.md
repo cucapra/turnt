@@ -5,6 +5,7 @@ Turnt Changelog
 ----------------------
 
 - Search for `turnt.toml` configuration files in ancestor directories, not just in the same directory as the test.
+- The minimum Python version advanced to 3.6.
 
 1.6.0 (2022-06-01)
 ------------------
