@@ -52,8 +52,10 @@ class TestConfig(NamedTuple):
 
 class TestEnv(NamedTuple):
     command: str
+    config_dir: str
     out_files: Dict[str, str]
     return_code: int
+    diff_cmd: List[str]
 
 
 def load_config(path, config_name):
@@ -191,17 +193,20 @@ def get_return_code(config, contents) -> int:
         return 0
 
 
-def get_env(config: dict, config_dir: str, path: str, args=None) -> TestEnv:
+def get_env(cfg: TestConfig, path: str) -> TestEnv:
     """Get the test environment for a specific test.
 
-    This extracts the options embedded in the test file, which can
-    override the options in the configuration. The path need not exist
-    or be a file. If it's a directory or does not exist, no options are
-    extracted (and the defaults are used).
+    This combines information from the configuration file and options
+    embedded in the test file, which can override the former. The path
+    need not exist or be a file. If it's a directory or does not exist,
+    no options are extracted (and the defaults are used).
 
     `args` can override the arguments for the command, which otherwise
     come from the file itself.
     """
+    # Load base options from the configuration file.
+    config, config_dir = load_config(path, cfg.config_name)
+
     # Load the contents for option parsing either from the file itself
     # or, if the test is a directory, from a file contained therein.
     if os.path.isfile(path):
@@ -219,9 +224,11 @@ def get_env(config: dict, config_dir: str, path: str, args=None) -> TestEnv:
             contents = ''
 
     return TestEnv(
-        get_command(config, config_dir, path, contents, args),
+        get_command(config, config_dir, path, contents, cfg.args),
+        config_dir,
         get_out_files(config, path, contents),
         get_return_code(config, contents),
+        shlex.split(config.get('diff', DIFF_DEFAULT)),
     )
 
 
@@ -293,9 +300,7 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
     enabled, in which case we just print the output. Return a bool
     indicating success and the message.
     """
-    config, config_dir = load_config(path, cfg.config_name)
-    env = get_env(config, config_dir, path, cfg.args)
-    diff_cmd = shlex.split(config.get('diff', DIFF_DEFAULT))
+    env = get_env(cfg, path)
 
     # Show the command if we're dumping the output.
     if cfg.dump:
@@ -315,7 +320,7 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
             shell=True,
             stdout=None if cfg.dump else stdout,
             stderr=None if cfg.dump else stderr,
-            cwd=config_dir,
+            cwd=env.config_dir,
         )
 
     # Check results.
@@ -335,7 +340,7 @@ def run_test(cfg: TestConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
                          for (k, v) in env.out_files.items()}
 
             return check_result(path, idx, cfg.save, cfg.diff, proc, out_files,
-                                env.return_code, diff_cmd)
+                                env.return_code, env.diff_cmd)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
