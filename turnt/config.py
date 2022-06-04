@@ -197,6 +197,27 @@ def get_return_code(config: dict, contents: str) -> int:
         return 0
 
 
+def read_contents(config: dict, path: str) -> str:
+    """Load the contents of a test, from which we will parse options.
+
+    We get the contents either from the file itself or, if the test is a
+    directory, from a file contained therein.
+    """
+    if os.path.isfile(path):
+        with open(path) as f:
+            return f.read()
+    else:
+        if 'opts_file' in config:
+            opts_path = os.path.join(path, config['opts_file'])
+            try:
+                with open(opts_path) as f:
+                    return f.read()
+            except IOError:
+                return ''
+        else:
+            return ''
+
+
 def configure_test(cfg: Config, path: str, idx: int) -> Test:
     """Get the configuration for a specific test.
 
@@ -211,21 +232,8 @@ def configure_test(cfg: Config, path: str, idx: int) -> Test:
     # Load base options from the configuration file.
     config, config_dir = load_config(path, cfg.config_name)
 
-    # Load the contents for option parsing either from the file itself
-    # or, if the test is a directory, from a file contained therein.
-    if os.path.isfile(path):
-        with open(path) as f:
-            contents = f.read()
-    else:
-        if 'opts_file' in config:
-            opts_path = os.path.join(path, config['opts_file'])
-            try:
-                with open(opts_path) as f:
-                    contents = f.read()
-            except IOError:
-                contents = ''
-        else:
-            contents = ''
+    # Load the contents for overrides.
+    contents = read_contents(config, path)
 
     return Test(
         cfg=cfg,
