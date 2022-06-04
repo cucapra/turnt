@@ -8,7 +8,7 @@ import sys
 import contextlib
 from concurrent import futures
 from typing import List, Tuple
-from .config import Config, Test, configure_test, STDOUT, STDERR
+from .config import Config, Test, configure_test, map_outputs
 
 
 def check_result(test: Test,
@@ -114,17 +114,13 @@ def run_test(cfg: Config, path: str, idx: int) -> Tuple[bool, List[str]]:
     else:
         try:
             # If we're in verbose but not dump/print mode, errors need to be
-            # copied from the temporary file to standard out
+            # copied from the temporary file to standard out.
             if cfg.verbose and not cfg.dump:
                 with open(stderr.name) as f:
                     sys.stdout.write(f.read())
 
-            # Replace shorthands with the standard output/error files.
-            sugar = {STDOUT: stdout.name, STDERR: stderr.name}
-            out_files = {k: sugar.get(v, v)
-                         for (k, v) in test.out_files.items()}
-            test = test._replace(out_files=out_files)
-
+            # Supply outputs and check.
+            test = map_outputs(test, stdout.name, stderr.name)
             return check_result(test, proc)
         finally:
             os.unlink(stdout.name)

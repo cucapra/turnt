@@ -264,3 +264,17 @@ def configure_test(cfg: Config, path: str, idx: int) -> Test:
         return_code=env.return_code,
         diff_cmd=env.diff_cmd,
     )
+
+
+def map_outputs(test: Test, stdout: str, stderr: str) -> Test:
+    """Update a test to reflect captured output streams.
+
+    The Test keeps track of all the output files that need to be
+    compared. This function lets a test runner supply the filenames for
+    stdout/stderr captures, which don't have "real" filenames until
+    after the test runs.
+    """
+    sugar = {STDOUT: stdout, STDERR: stderr}
+    out_files = {k: sugar.get(v, v)
+                 for (k, v) in test.out_files.items()}
+    return test._replace(out_files=out_files)
