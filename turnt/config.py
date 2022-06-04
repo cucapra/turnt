@@ -42,6 +42,8 @@ class TestEnv(NamedTuple):
 class Test(NamedTuple):
     """The configuration for running a specific test.
     """
+    env_name: str
+
     # The test file and its base directory.
     test_path: str
     config_dir: str
@@ -264,6 +266,7 @@ def configure_test(cfg: Config, path: str) -> Iterator[Test]:
             env = env._replace(args=cfg.args)
 
         yield Test(
+            env_name=env.name,
             test_path=path,
             command=format_command(env, config_dir, path),
             config_dir=config_dir,

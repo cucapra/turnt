@@ -11,6 +11,15 @@ from typing import List, Tuple, Iterator
 from .config import Config, Test, configure_test, map_outputs
 
 
+def tap_line(ok: bool, idx: int, test: Test) -> str:
+    """Format a TAP success/failure line."""
+    return '{} {} - {}'.format(
+        'ok' if ok else 'not ok',
+        idx,
+        test.test_path,
+    )
+
+
 def check_result(cfg: Config, test: Test,
                  proc: subprocess.CompletedProcess,
                  idx: int) -> Tuple[bool, List[str]]:
@@ -20,7 +29,7 @@ def check_result(cfg: Config, test: Test,
     """
     # If the command has a non-zero exit code, fail.
     if proc.returncode != test.return_code:
-        msg = ['not ok {} - {}'.format(idx, test.test_path)]
+        msg = [tap_line(False, idx, test)]
         if test.return_code:
             msg.append('# exit code: {}, expected: {}'.format(
                 proc.returncode, test.return_code,
@@ -62,11 +71,7 @@ def check_result(cfg: Config, test: Test,
             shutil.copy(output_file, saved_file)
 
     # Show TAP success line and annotations.
-    line = '{} {} - {}'.format(
-        'ok' if not differing else 'not ok',
-        idx,
-        test.test_path,
-    )
+    line = tap_line(not differing, idx, test)
     if update:
         line += ' # skip: updated {}'.format(', '.join(test.out_files.keys()))
 
