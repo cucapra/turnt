@@ -75,43 +75,7 @@ def ancestors(path: str) -> Iterator[str]:
             break
 
 
-def load_config(path: str, config_name: str) -> Tuple[dict, str]:
-    """Load the configuration for a test at the given path.
-
-    Return the configuration value itself and the containing directory.
-    """
-    for dirpath in ancestors(path):
-        config_path = os.path.join(dirpath, config_name)
-        if os.path.isfile(config_path):
-            with open(config_path, 'rb') as f:
-                return tomllib.load(f), dirpath
-
-    # No configuration; use defaults and embedded options only.
-    return {}, os.path.dirname(os.path.abspath(path))
-
-
-def extract_options(text: str, key: str) -> List[str]:
-    """Parse a config option(s) from the given text.
-
-    Options are embedded in declarations like "KEY: value" that may
-    occur anywhere in the file. We take all the text after "KEY: " until
-    the end of the line. Return the value strings as a list.
-    """
-    regex = r'\b{}:\s+(.*)'.format(key.upper())
-    return re.findall(regex, text)
-
-
-def extract_single_option(text: str, key: str) -> Optional[str]:
-    """Parse a single config option from the given text.
-
-    The format is the same as for `extract_options`, but we return only
-    the first value---or None if there are no instances.
-    """
-    options = extract_options(text, key)
-    return options[0] if options else None
-
-
-def get_command(env: TestEnv, config_dir: str, path: str) -> str:
+def format_command(env: TestEnv, config_dir: str, path: str) -> str:
     """Get the shell command to run for a given test, as a string.
     """
     assert env.command, "no command specified"
@@ -180,10 +144,6 @@ def get_out_files(env: TestEnv, path: str) -> Dict[str, str]:
             for (k, v) in env.out_files.items()}
 
 
-def get_return_code(env: TestEnv) -> int:
-    return env.return_code
-
-
 def read_contents(env: TestEnv, path: str) -> str:
     """Load the contents of a test, from which we will parse options.
 
@@ -205,6 +165,21 @@ def read_contents(env: TestEnv, path: str) -> str:
             return ''
 
 
+def load_config(path: str, config_name: str) -> Tuple[dict, str]:
+    """Load the configuration TOML file for a test at the given path.
+
+    Return the configuration data itself and the containing directory.
+    """
+    for dirpath in ancestors(path):
+        config_path = os.path.join(dirpath, config_name)
+        if os.path.isfile(config_path):
+            with open(config_path, 'rb') as f:
+                return tomllib.load(f), dirpath
+
+    # No configuration; use defaults and embedded options only.
+    return {}, os.path.dirname(os.path.abspath(path))
+
+
 def get_env(config_data: dict) -> TestEnv:
     """Get the settings from a parsed TOML configuration file.
     """
@@ -217,6 +192,27 @@ def get_env(config_data: dict) -> TestEnv:
         opts_file=config_data.get("opts_file"),
         args='',
     )
+
+
+def extract_options(text: str, key: str) -> List[str]:
+    """Parse a config option(s) from the given text.
+
+    Options are embedded in declarations like "KEY: value" that may
+    occur anywhere in the file. We take all the text after "KEY: " until
+    the end of the line. Return the value strings as a list.
+    """
+    regex = r'\b{}:\s+(.*)'.format(key.upper())
+    return re.findall(regex, text)
+
+
+def extract_single_option(text: str, key: str) -> Optional[str]:
+    """Parse a single config option from the given text.
+
+    The format is the same as for `extract_options`, but we return only
+    the first value---or None if there are no instances.
+    """
+    options = extract_options(text, key)
+    return options[0] if options else None
 
 
 def override_env(env: TestEnv, contents: str) -> TestEnv:
@@ -262,9 +258,9 @@ def configure_test(cfg: Config, path: str, idx: int) -> Test:
         cfg=cfg,
         idx=idx,
         test_path=path,
-        command=get_command(env, config_dir, path),
+        command=format_command(env, config_dir, path),
         config_dir=config_dir,
         out_files=get_out_files(env, path),
-        return_code=get_return_code(env),
+        return_code=env.return_code,
         diff_cmd=env.diff_cmd,
     )
