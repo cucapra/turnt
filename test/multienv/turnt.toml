@@ -1,0 +1,9 @@
+[envs.one]
+command = "echo env1 >&2 ; echo hi ; cat {filename}"
+
+[envs.two]
+command = "echo env2 >&2 ; echo hi ; cat {filename}"
+
+[envs.three]
+command = "echo env2 >&2 ; echo bye ; cat {filename}"
+output.out3 = "-"
