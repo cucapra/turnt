@@ -36,11 +36,16 @@ class Config(NamedTuple):
 class Test(NamedTuple):
     """The configuration for running a specific test.
     """
+    # About the batch this test belongs to.
     cfg: Config
     idx: int
+
+    # The test file and its base directory.
     test_path: str
-    command: str
     config_dir: str
+
+    # The test run's behavior.
+    command: str
     out_files: Dict[str, str]
     return_code: int
     diff_cmd: List[str]
@@ -230,14 +235,14 @@ def configure_test(cfg: Config, path: str, idx: int) -> Test:
             contents = ''
 
     return Test(
-        cfg,
-        idx,
-        path,
-        get_command(config, config_dir, path, contents, cfg.args),
-        config_dir,
-        get_out_files(config, path, contents),
-        get_return_code(config, contents),
-        shlex.split(config.get('diff', DIFF_DEFAULT)),
+        cfg=cfg,
+        idx=idx,
+        test_path=path,
+        command=get_command(config, config_dir, path, contents, cfg.args),
+        config_dir=config_dir,
+        out_files=get_out_files(config, path, contents),
+        return_code=get_return_code(config, contents),
+        diff_cmd=shlex.split(config.get('diff', DIFF_DEFAULT)),
     )
 
 
