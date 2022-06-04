@@ -37,6 +37,7 @@ class Test(NamedTuple):
     """The configuration for running a specific test.
     """
     cfg: Config
+    idx: int
     test_path: str
     command: str
     config_dir: str
@@ -198,7 +199,7 @@ def get_return_code(config: dict, contents: str) -> int:
         return 0
 
 
-def configure_test(cfg: Config, path: str) -> Test:
+def configure_test(cfg: Config, path: str, idx: int) -> Test:
     """Get the configuration for a specific test.
 
     This combines information from the configuration file and options
@@ -230,6 +231,7 @@ def configure_test(cfg: Config, path: str) -> Test:
 
     return Test(
         cfg,
+        idx,
         path,
         get_command(config, config_dir, path, contents, cfg.args),
         config_dir,
@@ -240,15 +242,14 @@ def configure_test(cfg: Config, path: str) -> Test:
 
 
 def check_result(test: Test,
-                 proc: subprocess.CompletedProcess,
-                 idx: int) -> Tuple[bool, List[str]]:
+                 proc: subprocess.CompletedProcess) -> Tuple[bool, List[str]]:
     """Check the results of a single test and print the outcome.
 
     Return a bool indicating success and a TAP message.
     """
     # If the command has a non-zero exit code, fail.
     if proc.returncode != test.return_code:
-        msg = ['not ok {} - {}'.format(idx, test.test_path)]
+        msg = ['not ok {} - {}'.format(test.idx, test.test_path)]
         if test.return_code:
             msg.append('# exit code: {}, expected: {}'.format(
                 proc.returncode, test.return_code,
@@ -292,7 +293,7 @@ def check_result(test: Test,
     # Show TAP success line and annotations.
     line = '{} {} - {}'.format(
         'ok' if not differing else 'not ok',
-        idx,
+        test.idx,
         test.test_path,
     )
     if update:
@@ -314,7 +315,7 @@ def run_test(cfg: Config, path: str, idx: int) -> Tuple[bool, List[str]]:
     enabled, in which case we just print the output. Return a bool
     indicating success and the message.
     """
-    test = configure_test(cfg, path)
+    test = configure_test(cfg, path, idx)
 
     # Show the command if we're dumping the output.
     if cfg.dump:
@@ -354,7 +355,7 @@ def run_test(cfg: Config, path: str, idx: int) -> Tuple[bool, List[str]]:
                          for (k, v) in test.out_files.items()}
             test = test._replace(out_files=out_files)
 
-            return check_result(test, proc, idx)
+            return check_result(test, proc)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
