@@ -26,6 +26,17 @@ class Config(NamedTuple):
     args: Optional[str]
 
 
+class TestEnv(NamedTuple):
+    """The configuration values describing how to treat tests.
+    """
+    command: Optional[str]  # Here, a template to be filled in.
+    out_files: Dict[str, str]
+    return_code: int
+    out_base: str
+    opts_file: Optional[str]
+    diff_cmd: List[str]
+
+
 class Test(NamedTuple):
     """The configuration for running a specific test.
     """
@@ -102,11 +113,12 @@ def extract_single_option(text: str, key: str) -> Optional[str]:
         return None
 
 
-def get_command(config: dict, config_dir: str, path: str, contents: str,
+def get_command(env: TestEnv, config_dir: str, path: str, contents: str,
                 args: Optional[str]) -> str:
     """Get the shell command to run for a given test, as a string.
     """
-    cmd = extract_single_option(contents, 'cmd') or config['command']
+    cmd = extract_single_option(contents, 'cmd') or env.command
+    assert cmd, "no command specified"
     args = args or extract_single_option(contents, 'args') or ''
 
     # Construct the command.
@@ -164,7 +176,7 @@ def format_expected_path(ext: str, path: str, out_base: str) -> str:
     return os.path.join(dirname, '{}.{}'.format(base, ext))
 
 
-def get_out_files(config: dict, path: str, contents: str) -> Dict[str, str]:
+def get_out_files(env: TestEnv, path: str, contents: str) -> Dict[str, str]:
     """Get the mapping from saved output files to expected output files
     for the test.
     """
@@ -172,32 +184,24 @@ def get_out_files(config: dict, path: str, contents: str) -> Dict[str, str]:
     output_strs = extract_options(contents, 'out')
     if output_strs:
         outputs = {k: v for k, v in (o.split() for o in output_strs)}
-    elif "output" in config:
-        outputs = config["output"]
     else:
-        # If no outputs given anywhere, assume standard out.
-        outputs = {"out": STDOUT}
+        outputs = env.out_files
 
-    # Get the base to use for directory test outputs.
-    out_base = config.get("out_base", "out")
-
-    return {format_expected_path(k, path, out_base):
+    return {format_expected_path(k, path, env.out_base):
             format_output_path(v, path)
             for (k, v) in outputs.items()}
 
 
-def get_return_code(config: dict, contents: str) -> int:
+def get_return_code(env: TestEnv, contents: str) -> int:
     return_code = extract_single_option(contents, 'return')
 
     if return_code:
         return int(return_code)
-    elif "return_code" in config:
-        return int(config["return_code"])
     else:
-        return 0
+        return env.return_code
 
 
-def read_contents(config: dict, path: str) -> str:
+def read_contents(env: TestEnv, path: str) -> str:
     """Load the contents of a test, from which we will parse options.
 
     We get the contents either from the file itself or, if the test is a
@@ -207,8 +211,8 @@ def read_contents(config: dict, path: str) -> str:
         with open(path) as f:
             return f.read()
     else:
-        if 'opts_file' in config:
-            opts_path = os.path.join(path, config['opts_file'])
+        if env.opts_file:
+            opts_path = os.path.join(path, env.opts_file)
             try:
                 with open(opts_path) as f:
                     return f.read()
@@ -216,6 +220,19 @@ def read_contents(config: dict, path: str) -> str:
                 return ''
         else:
             return ''
+
+
+def get_env(config_data: dict) -> TestEnv:
+    """Get the settings from a parsed TOML configuration file.
+    """
+    return TestEnv(
+        command=config_data.get('command'),
+        out_files=config_data.get('output', {"out": STDOUT}),
+        return_code=config_data.get('return_code', 0),
+        diff_cmd=shlex.split(config_data.get('diff', DIFF_DEFAULT)),
+        out_base=config_data.get("out_base", "out"),
+        opts_file=config_data.get("opts_file"),
+    )
 
 
 def configure_test(cfg: Config, path: str, idx: int) -> Test:
@@ -231,17 +248,18 @@ def configure_test(cfg: Config, path: str, idx: int) -> Test:
     """
     # Load base options from the configuration file.
     config, config_dir = load_config(path, cfg.config_name)
+    env = get_env(config)
 
     # Load the contents for overrides.
-    contents = read_contents(config, path)
+    contents = read_contents(env, path)
 
     return Test(
         cfg=cfg,
         idx=idx,
         test_path=path,
-        command=get_command(config, config_dir, path, contents, cfg.args),
+        command=get_command(env, config_dir, path, contents, cfg.args),
         config_dir=config_dir,
-        out_files=get_out_files(config, path, contents),
-        return_code=get_return_code(config, contents),
-        diff_cmd=shlex.split(config.get('diff', DIFF_DEFAULT)),
+        out_files=get_out_files(env, path, contents),
+        return_code=get_return_code(env, contents),
+        diff_cmd=env.diff_cmd,
     )
