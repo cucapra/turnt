@@ -145,16 +145,26 @@ There are two configuration options just for dealing with directory tests:
 [str.format]: https://docs.python.org/3/library/string.html#formatstrings
 
 
-Command Line
-------------
+Command-Line Interface
+----------------------
 
-These are the command-line options:
+The most common `turnt` command-line options you'll need while running and updating tests are:
 
 - `--save`: Bless the current output from each test as the "correct" output, saving it to the output file that you'll want to check into version control.
 - `--diff`: Show diffs between the actual and expected output for each test.
+
+You also might enjoy:
+
+- `--parallel` or `-j`: Run your tests faster using parallel threads.
+
+These options are useful when working with one specific test file:
+
 - `--verbose` or `-v`: Disable Turnt's default behavior where it will suppress test commands' stderr output. The result is more helpful but harder to read.
 - `--print` or `-p`: Instead of checking test results, just run the command and show the output directly. This can be useful (especially in combination with `-v`) when iterating on a test interactively.
-- `--args` or `-a`: Override the `args` string that gets interpolated into commands, which normally comes from in-file comments.
+- `--args` or `-a`: Override the `{args}` string in the test command.
+
+This option lets you switch between different test environments:
+
 - `--config` or `-c`: Look for this config filename instead of the default `turnt.toml`.
 
 
@@ -171,7 +181,7 @@ To make the output more pleasant to read, you can pipe it into a tool like [tap-
 [tap-difflet]: https://github.com/namuol/tap-difflet
 
 
-Authors
+Credits
 -------
 
 Turnt is by [Adrian Sampson][adrian] and [Alexa VanHattum][alexa].
