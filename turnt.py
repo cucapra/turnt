@@ -36,6 +36,7 @@ class BatchConfig(NamedTuple):
 class TestConfig(NamedTuple):
     """The configuration for running a specific test.
     """
+    batch: BatchConfig
     test_path: str
     command: str
     config_dir: str
@@ -228,6 +229,7 @@ def configure_test(bcfg: BatchConfig, path: str) -> TestConfig:
             contents = ''
 
     return TestConfig(
+        bcfg,
         path,
         get_command(config, config_dir, path, contents, bcfg.args),
         config_dir,
@@ -237,7 +239,7 @@ def configure_test(bcfg: BatchConfig, path: str) -> TestConfig:
     )
 
 
-def check_result(bcfg: BatchConfig, tcfg: TestConfig,
+def check_result(tcfg: TestConfig,
                  proc: subprocess.CompletedProcess,
                  idx: int) -> Tuple[bool, List[str]]:
     """Check the results of a single test and print the outcome.
@@ -263,7 +265,7 @@ def check_result(bcfg: BatchConfig, tcfg: TestConfig,
     missing = []
     for saved_file, output_file in tcfg.out_files.items():
         # Diff the actual & expected output.
-        if bcfg.diff:
+        if tcfg.batch.diff:
             subprocess.run(tcfg.diff_cmd + [saved_file, output_file])
 
         # Read actual & expected output.
@@ -282,7 +284,7 @@ def check_result(bcfg: BatchConfig, tcfg: TestConfig,
             missing.append(saved_file)
 
     # Save the new output, if requested.
-    update = bcfg.save and differing
+    update = tcfg.batch.save and differing
     if update:
         for saved_file, output_file in tcfg.out_files.items():
             shutil.copy(output_file, saved_file)
@@ -352,7 +354,7 @@ def run_test(bcfg: BatchConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
                          for (k, v) in tcfg.out_files.items()}
             tcfg = tcfg._replace(out_files=out_files)
 
-            return check_result(bcfg, tcfg, proc, idx)
+            return check_result(tcfg, proc, idx)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
