@@ -22,7 +22,7 @@ STDOUT = '-'
 STDERR = '2'
 
 
-class BatchConfig(NamedTuple):
+class Config(NamedTuple):
     """The setup for a test run (which consists of many tests).
     """
     config_name: str
@@ -33,10 +33,10 @@ class BatchConfig(NamedTuple):
     args: Optional[str]
 
 
-class TestConfig(NamedTuple):
+class Test(NamedTuple):
     """The configuration for running a specific test.
     """
-    batch: BatchConfig
+    cfg: Config
     test_path: str
     command: str
     config_dir: str
@@ -198,7 +198,7 @@ def get_return_code(config: dict, contents: str) -> int:
         return 0
 
 
-def configure_test(bcfg: BatchConfig, path: str) -> TestConfig:
+def configure_test(cfg: Config, path: str) -> Test:
     """Get the configuration for a specific test.
 
     This combines information from the configuration file and options
@@ -210,7 +210,7 @@ def configure_test(bcfg: BatchConfig, path: str) -> TestConfig:
     come from the file itself.
     """
     # Load base options from the configuration file.
-    config, config_dir = load_config(path, bcfg.config_name)
+    config, config_dir = load_config(path, cfg.config_name)
 
     # Load the contents for option parsing either from the file itself
     # or, if the test is a directory, from a file contained therein.
@@ -228,10 +228,10 @@ def configure_test(bcfg: BatchConfig, path: str) -> TestConfig:
         else:
             contents = ''
 
-    return TestConfig(
-        bcfg,
+    return Test(
+        cfg,
         path,
-        get_command(config, config_dir, path, contents, bcfg.args),
+        get_command(config, config_dir, path, contents, cfg.args),
         config_dir,
         get_out_files(config, path, contents),
         get_return_code(config, contents),
@@ -239,7 +239,7 @@ def configure_test(bcfg: BatchConfig, path: str) -> TestConfig:
     )
 
 
-def check_result(tcfg: TestConfig,
+def check_result(test: Test,
                  proc: subprocess.CompletedProcess,
                  idx: int) -> Tuple[bool, List[str]]:
     """Check the results of a single test and print the outcome.
@@ -247,11 +247,11 @@ def check_result(tcfg: TestConfig,
     Return a bool indicating success and a TAP message.
     """
     # If the command has a non-zero exit code, fail.
-    if proc.returncode != tcfg.return_code:
-        msg = ['not ok {} - {}'.format(idx, tcfg.test_path)]
-        if tcfg.return_code:
+    if proc.returncode != test.return_code:
+        msg = ['not ok {} - {}'.format(idx, test.test_path)]
+        if test.return_code:
             msg.append('# exit code: {}, expected: {}'.format(
-                proc.returncode, tcfg.return_code,
+                proc.returncode, test.return_code,
             ))
         else:
             msg.append('# exit code: {}'.format(proc.returncode))
@@ -263,10 +263,10 @@ def check_result(tcfg: TestConfig,
     # Check whether outputs match.
     differing = []
     missing = []
-    for saved_file, output_file in tcfg.out_files.items():
+    for saved_file, output_file in test.out_files.items():
         # Diff the actual & expected output.
-        if tcfg.batch.diff:
-            subprocess.run(tcfg.diff_cmd + [saved_file, output_file])
+        if test.cfg.diff:
+            subprocess.run(test.diff_cmd + [saved_file, output_file])
 
         # Read actual & expected output.
         with open(output_file) as f:
@@ -284,19 +284,19 @@ def check_result(tcfg: TestConfig,
             missing.append(saved_file)
 
     # Save the new output, if requested.
-    update = tcfg.batch.save and differing
+    update = test.cfg.save and differing
     if update:
-        for saved_file, output_file in tcfg.out_files.items():
+        for saved_file, output_file in test.out_files.items():
             shutil.copy(output_file, saved_file)
 
     # Show TAP success line and annotations.
     line = '{} {} - {}'.format(
         'ok' if not differing else 'not ok',
         idx,
-        tcfg.test_path,
+        test.test_path,
     )
     if update:
-        line += ' # skip: updated {}'.format(', '.join(tcfg.out_files.keys()))
+        line += ' # skip: updated {}'.format(', '.join(test.out_files.keys()))
 
     diff_exist = [fn for fn in differing if fn not in missing]
     if diff_exist:
@@ -307,22 +307,22 @@ def check_result(tcfg: TestConfig,
     return not differing, [line]
 
 
-def run_test(bcfg: BatchConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
+def run_test(cfg: Config, path: str, idx: int) -> Tuple[bool, List[str]]:
     """Run a single test.
 
     Check the output and produce a TAP summary line, unless `dump` is
     enabled, in which case we just print the output. Return a bool
     indicating success and the message.
     """
-    tcfg = configure_test(bcfg, path)
+    test = configure_test(cfg, path)
 
     # Show the command if we're dumping the output.
-    if bcfg.dump:
-        print('$', tcfg.command, file=sys.stderr)
+    if cfg.dump:
+        print('$', test.command, file=sys.stderr)
 
     with contextlib.ExitStack() as stack:
         # Possibly use a temporary file for the output.
-        if not bcfg.dump:
+        if not cfg.dump:
             stdout = tempfile.NamedTemporaryFile(delete=False)
             stderr = tempfile.NamedTemporaryFile(delete=False)
             stack.enter_context(stdout)
@@ -330,41 +330,40 @@ def run_test(bcfg: BatchConfig, path: str, idx: int) -> Tuple[bool, List[str]]:
 
         # Run the command.
         proc = subprocess.run(
-            tcfg.command,
+            test.command,
             shell=True,
-            stdout=None if bcfg.dump else stdout,
-            stderr=None if bcfg.dump else stderr,
-            cwd=tcfg.config_dir,
+            stdout=None if cfg.dump else stdout,
+            stderr=None if cfg.dump else stderr,
+            cwd=test.config_dir,
         )
 
     # Check results.
-    if bcfg.dump:
+    if cfg.dump:
         return proc.returncode == 0, []
     else:
         try:
             # If we're in verbose but not dump/print mode, errors need to be
             # copied from the temporary file to standard out
-            if bcfg.verbose and not bcfg.dump:
+            if cfg.verbose and not cfg.dump:
                 with open(stderr.name) as f:
                     sys.stdout.write(f.read())
 
             # Replace shorthands with the standard output/error files.
             sugar = {STDOUT: stdout.name, STDERR: stderr.name}
             out_files = {k: sugar.get(v, v)
-                         for (k, v) in tcfg.out_files.items()}
-            tcfg = tcfg._replace(out_files=out_files)
+                         for (k, v) in test.out_files.items()}
+            test = test._replace(out_files=out_files)
 
-            return check_result(tcfg, proc, idx)
+            return check_result(test, proc, idx)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
 
 
-def run_tests(bcfg: BatchConfig, parallel: bool,
-              test_files: List[str]) -> bool:
+def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
     """Run all the tests in an entire suite, possibly in parallel.
     """
-    if test_files and not bcfg.dump:
+    if test_files and not cfg.dump:
         print('1..{}'.format(len(test_files)))
 
     if parallel:
@@ -375,7 +374,7 @@ def run_tests(bcfg: BatchConfig, parallel: bool,
             for idx, path in enumerate(test_files):
                 futs.append(pool.submit(
                     run_test,
-                    bcfg, path, idx + 1
+                    cfg, path, idx + 1
                 ))
             for fut in futs:
                 sc, msg = fut.result()
@@ -388,7 +387,7 @@ def run_tests(bcfg: BatchConfig, parallel: bool,
         # Simple sequential loop.
         success = True
         for idx, path in enumerate(test_files):
-            sc, msg = run_test(bcfg, path, idx + 1)
+            sc, msg = run_test(cfg, path, idx + 1)
             success &= sc
             for line in msg:
                 print(line)
@@ -413,7 +412,7 @@ def run_tests(bcfg: BatchConfig, parallel: bool,
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
 def turnt(file: List[str], save: bool, diff: bool, verbose: bool, dump: bool,
           args: Optional[str], parallel: bool, config: str) -> None:
-    bcfg = BatchConfig(
+    cfg = Config(
         config_name=config,
         save=save,
         diff=diff,
@@ -421,7 +420,7 @@ def turnt(file: List[str], save: bool, diff: bool, verbose: bool, dump: bool,
         dump=dump,
         args=args,
     )
-    success = run_tests(bcfg, parallel, file)
+    success = run_tests(cfg, parallel, file)
     sys.exit(0 if success else 1)
 
 
