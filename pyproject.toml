@@ -11,7 +11,7 @@ description-file = "README.md"
 requires-python = ">=3.6"
 requires = [
     "click",
-    "tomlkit",
+    "tomli >= 1.1.0 ; python_version < \"3.11\"",
 ]
 
 [tool.flit.scripts]

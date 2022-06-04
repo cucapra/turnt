@@ -1,10 +1,14 @@
 """Define the configuration for tests.
 """
 from typing import NamedTuple, List, Tuple, Dict, Iterator, Optional
-import tomlkit
 import shlex
 import re
 import os
+import sys
+if sys.version_info[:2] >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 DIFF_DEFAULT = 'diff --new-file --unified'
 STDOUT = '-'
@@ -67,8 +71,8 @@ def load_config(path: str, config_name: str) -> Tuple[dict, str]:
     for dirpath in ancestors(path):
         config_path = os.path.join(dirpath, config_name)
         if os.path.isfile(config_path):
-            with open(config_path) as f:
-                return dict(tomlkit.loads(f.read())), dirpath
+            with open(config_path, 'rb') as f:
+                return tomllib.load(f), dirpath
 
     # No configuration; use defaults and embedded options only.
     return {}, os.path.dirname(os.path.abspath(path))

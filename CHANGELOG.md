@@ -6,6 +6,9 @@ Turnt Changelog
 
 - Search for `turnt.toml` configuration files in ancestor directories, not just in the same directory as the test.
 - The minimum Python version advanced to 3.6.
+- Switch the TOML library to [tomli][] (or the standard library on Python 3.11+).
+
+[tomli]: https://github.com/hukkin/tomli
 
 1.6.0 (2022-06-01)
 ------------------
