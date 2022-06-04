@@ -1,1 +1,2 @@
 command = "echo {base} {args} ; cat {filename}/test.in"
+opts_file = "opts.txt"
