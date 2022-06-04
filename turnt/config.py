@@ -35,6 +35,7 @@ class TestEnv(NamedTuple):
     out_base: str
     opts_file: Optional[str]
     diff_cmd: List[str]
+    args: str
 
 
 class Test(NamedTuple):
@@ -107,27 +108,21 @@ def extract_single_option(text: str, key: str) -> Optional[str]:
     the first value---or None if there are no instances.
     """
     options = extract_options(text, key)
-    if options:
-        return options[0]
-    else:
-        return None
+    return options[0] if options else None
 
 
-def get_command(env: TestEnv, config_dir: str, path: str, contents: str,
-                args: Optional[str]) -> str:
+def get_command(env: TestEnv, config_dir: str, path: str) -> str:
     """Get the shell command to run for a given test, as a string.
     """
-    cmd = extract_single_option(contents, 'cmd') or env.command
-    assert cmd, "no command specified"
-    args = args or extract_single_option(contents, 'args') or ''
+    assert env.command, "no command specified"
 
     # Construct the command.
     filename = os.path.relpath(path, config_dir)
     base, _ = os.path.splitext(os.path.basename(filename))
-    return cmd.format(
+    return env.command.format(
         filename=shlex.quote(filename),
         base=shlex.quote(base),
-        args=args,
+        args=env.args,
     )
 
 
@@ -176,29 +171,17 @@ def format_expected_path(ext: str, path: str, out_base: str) -> str:
     return os.path.join(dirname, '{}.{}'.format(base, ext))
 
 
-def get_out_files(env: TestEnv, path: str, contents: str) -> Dict[str, str]:
+def get_out_files(env: TestEnv, path: str) -> Dict[str, str]:
     """Get the mapping from saved output files to expected output files
     for the test.
     """
-    # Get the mapping from extensions to output files.
-    output_strs = extract_options(contents, 'out')
-    if output_strs:
-        outputs = {k: v for k, v in (o.split() for o in output_strs)}
-    else:
-        outputs = env.out_files
-
     return {format_expected_path(k, path, env.out_base):
             format_output_path(v, path)
-            for (k, v) in outputs.items()}
+            for (k, v) in env.out_files.items()}
 
 
-def get_return_code(env: TestEnv, contents: str) -> int:
-    return_code = extract_single_option(contents, 'return')
-
-    if return_code:
-        return int(return_code)
-    else:
-        return env.return_code
+def get_return_code(env: TestEnv) -> int:
+    return env.return_code
 
 
 def read_contents(env: TestEnv, path: str) -> str:
@@ -232,6 +215,23 @@ def get_env(config_data: dict) -> TestEnv:
         diff_cmd=shlex.split(config_data.get('diff', DIFF_DEFAULT)),
         out_base=config_data.get("out_base", "out"),
         opts_file=config_data.get("opts_file"),
+        args='',
+    )
+
+
+def override_env(env: TestEnv, contents: str) -> TestEnv:
+    """Update a test environment using options embedded in a test file.
+    """
+    output_strs = extract_options(contents, 'out')
+    outputs = {k: v for k, v in (o.split() for o in output_strs)}
+
+    return_code = extract_single_option(contents, 'return')
+
+    return env._replace(
+        command=extract_single_option(contents, 'cmd') or env.command,
+        out_files=outputs or env.out_files,
+        args=extract_single_option(contents, 'args') or env.args,
+        return_code=int(return_code) if return_code else env.return_code,
     )
 
 
@@ -250,16 +250,21 @@ def configure_test(cfg: Config, path: str, idx: int) -> Test:
     config, config_dir = load_config(path, cfg.config_name)
     env = get_env(config)
 
-    # Load the contents for overrides.
+    # Load the contents and extract overrides.
     contents = read_contents(env, path)
+    env = override_env(env, contents)
+
+    # Further override using the global configuration.
+    if cfg.args is not None:
+        env = env._replace(args=cfg.args)
 
     return Test(
         cfg=cfg,
         idx=idx,
         test_path=path,
-        command=get_command(env, config_dir, path, contents, cfg.args),
+        command=get_command(env, config_dir, path),
         config_dir=config_dir,
-        out_files=get_out_files(env, path, contents),
-        return_code=get_return_code(env, contents),
+        out_files=get_out_files(env, path),
+        return_code=get_return_code(env),
         diff_cmd=env.diff_cmd,
     )
