@@ -29,7 +29,7 @@ class Config(NamedTuple):
 class TestEnv(NamedTuple):
     """The configuration values describing how to treat tests.
     """
-    name: str
+    name: Optional[str]
     command: Optional[str]  # Here, a template to be filled in.
     out_files: Dict[str, str]
     return_code: int
@@ -42,7 +42,7 @@ class TestEnv(NamedTuple):
 class Test(NamedTuple):
     """The configuration for running a specific test.
     """
-    env_name: str
+    env_name: Optional[str]
 
     # The test file and its base directory.
     test_path: str
@@ -179,7 +179,7 @@ def load_config(path: str, config_name: str) -> Tuple[dict, str]:
     return {}, os.path.dirname(os.path.abspath(path))
 
 
-def get_env(config_data: dict, name: str) -> TestEnv:
+def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
     """Get the settings from a configuration section.
     """
     return TestEnv(
@@ -204,7 +204,7 @@ def get_envs(config_base: dict) -> Iterator[TestEnv]:
             yield get_env(env, name)
     else:
         # It's a single-environment configuration.
-        yield get_env(config_base, 'default')
+        yield get_env(config_base)
 
 
 def extract_options(text: str, key: str) -> List[str]:

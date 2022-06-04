@@ -13,11 +13,11 @@ from .config import Config, Test, configure_test, map_outputs
 
 def tap_line(ok: bool, idx: int, test: Test) -> str:
     """Format a TAP success/failure line."""
-    return '{} {} - {} {}'.format(
+    return '{} {} - {}{}'.format(
         'ok' if ok else 'not ok',
         idx,
         test.test_path,
-        test.env_name,
+        ' {}'.format(test.env_name) if test.env_name else '',
     )
 
 
