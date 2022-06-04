@@ -1,23 +1,34 @@
 Tiny Unified Runner N' Tester (Turnt)
 =====================================
 
-Turnt is a simple testing tool inspired by [Cram][] and [LLVM's lit][lit].
-The idea is that each test consists a single input file and one or more output files.
-You want to run a command on the input file and check that the output is equal to the expected output files.
+Turnt is a simple snapshot testing tool inspired by [Cram][] and [LLVM's lit][lit].
+It's good for testing things that translate text files to other text files, like compilers.
+The idea is that each test is one input file, and you want to run a command and check that it still matches the saved output file.
 
 To use it:
 
-1. Create a test file.
-2. Decide what command you need to run on this input.
-   There are two options:
-   You can put this in a `turnt.toml` config file alongside your test: use `command = "mycmd {filename}"` to pass the test file as an argument to `mycmd`.
-   Or you can embed it in a comment in the test file itself: use `CMD: mycmd {filename}`.
-3. Get the initial output.
-   Run `turnt --save foo.t` to generate the expected output in `foo.out`.
-   You'll want to check these output files into version control along with your test.
-4. Run the tests.
-   Use `turnt foo.t` to check a test output.
-   If a test fails, add `--diff` to compare the actual and expected outputs.
+1. *Configure.*
+   Decide what command you want to test.
+   Make a `turnt.toml` config file and put `command = "mycmd {filename}"` in it to pass each test file as an argument to `mycmd`.
+2. *Create a test.*
+   Just write an input file next to your `turnt.toml`.
+   We'll call it `foo.t`.
+3. *Take a snapshot.*
+   Run `turnt --save foo.t` to execute `mycmd foo.t` and save the standard output into `foo.out`.
+   You might want to take a look at this output to make sure it's what you expect.
+   Then you check both the input `foo.t` and output `foo.out` into version control.
+4. *Test your work.*
+   Now that you have a test in place, keep working.
+   Use `turnt *.t` to run all your tests and confirm that the output still matches.
+   If there's a mismatch, you can do `turnt --diff` to see the changes.
+   (Or if you're confident, try `turnt --save` followed by `git diff`.)
+
+Turnt's philosophy is to minimize the effort it takes to write new tests so you can quickly build up lots of them.
+You don't write any custom logic to check results; you just record the complete "golden" output for each test.
+
+Compared to ordinary unit testing, "snapshot" tests incur the mental effort of manually inspecting diffs when things change.
+In return, it's easier to expand test coverage.
+Snapshots also act as a crude form of documentation because every test is a complete, valid input to your program.
 
 [cram]: https://bitheap.org/cram/
 [lit]: https://llvm.org/docs/CommandGuide/lit.html
