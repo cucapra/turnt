@@ -171,14 +171,16 @@ This option lets you switch between different test environments:
 TAP
 ---
 
-Turnt outputs [TAP][] results by default.
-To make the output more pleasant to read, you can pipe it into a tool like [tap-difflet][]:
+Turnt outputs results in the machine-readable [TAP][] format.
+To make the output more pleasant to read, you can pipe it into a tool like [tap-difflet][], [tap-dot][], or [faucet][]:
 
     $ npm install -g tap-difflet
     $ turnt *.t | tap-difflet
 
 [tap]: http://testanything.org
 [tap-difflet]: https://github.com/namuol/tap-difflet
+[tap-dot]: https://github.com/scottcorgan/tap-dot
+[faucet]: https://github.com/substack/faucet
 
 
 Credits

@@ -147,7 +147,7 @@ def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
                 sc, msg = fut.result()
                 success &= sc
                 for line in msg:
-                    print(line)
+                    print(line, flush=True)
         return success
 
     else:
@@ -157,5 +157,5 @@ def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
             sc, msg = run_test(cfg, path, idx + 1)
             success &= sc
             for line in msg:
-                print(line)
+                print(line, flush=True)
         return success

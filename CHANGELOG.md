@@ -4,6 +4,8 @@ Turnt Changelog
 1.8.0 (in development)
 ----------------------
 
+- Flush the output buffer after every line, which makes streaming TAP consumers more useful.
+
 1.7.0 (2022-06-03)
 ------------------
 
