@@ -153,6 +153,8 @@ If you want a more standard (non-differential) setup, just set the `output` conf
     command = "profile {filename}"
     output.prof = "-"
 
+You can pick which environments you want to run with the `-e` command-line flag (see below).
+
 [dt]: https://en.wikipedia.org/wiki/Differential_testing
 
 
@@ -201,8 +203,9 @@ These options are useful when working with one specific test file:
 - `--print` or `-p`: Instead of checking test results, just run the command and show the output directly. This can be useful (especially in combination with `-v`) when iterating on a test interactively.
 - `--args` or `-a`: Override the `{args}` string in the test command.
 
-This option lets you switch between different test environments:
+These options lets you switch between different test environments:
 
+- `--env` or `-e`: Give the name of a configured [environment](#multiple-environments) to run. Use this multiple times to run multiple environments. By default, Turnt runs all the configured environments for every test.
 - `--config` or `-c`: Look for this config filename instead of the default `turnt.toml`.
 
 

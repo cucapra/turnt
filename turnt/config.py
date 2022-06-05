@@ -24,6 +24,7 @@ class Config(NamedTuple):
     verbose: bool
     dump: bool
     args: Optional[str]
+    envs: List[str]
 
 
 class TestEnv(NamedTuple):
@@ -194,13 +195,18 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
     )
 
 
-def get_envs(config_base: dict) -> Iterator[TestEnv]:
-    """List all the test environments described in a TOML config file.
+def get_envs(config_base: dict, names: List[str]) -> Iterator[TestEnv]:
+    """List the test environments described in a TOML config file.
+
+    If `names` is empty, include all the environments. Otherwise, only
+    include environments with matching names.
     """
     if 'envs' in config_base:
         # It's a multi-environment configuration. Ignore the "root" of
         # the config document and use `envs` exclusively.
         for name, env in config_base['envs'].items():
+            if names and name not in names:
+                continue
             yield get_env(env, name)
     else:
         # It's a single-environment configuration.
@@ -256,7 +262,7 @@ def configure_test(cfg: Config, path: str) -> Iterator[Test]:
     config, config_dir = load_config(path, cfg.config_name)
 
     # Configure each environment.
-    for env in get_envs(config):
+    for env in get_envs(config, names=cfg.envs):
         # Load the contents and extract overrides.
         contents = read_contents(env, path)
         env = override_env(env, contents)
