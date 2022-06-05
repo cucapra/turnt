@@ -139,6 +139,7 @@ For example:
 Each environment can have the full complement of configuration options described above:
 for example, `command`, `output`, and `return_code`.
 When you run `turnt` on some files, it will run all the environments on all the files.
+There is also a Boolean `default` flag to turn off an environment by default; that way, you can only use it by asking for it with the `-e` flag (see below).
 
 This example is a differential testing setup because both environments share the same (default) snapshot file:
 a test `foo.t` will look for its stdout snapshot in `foo.out`.
@@ -152,8 +153,6 @@ If you want a more standard (non-differential) setup, just set the `output` conf
     [envs.profile]
     command = "profile {filename}"
     output.prof = "-"
-
-You can pick which environments you want to run with the `-e` command-line flag (see below).
 
 [dt]: https://en.wikipedia.org/wiki/Differential_testing
 

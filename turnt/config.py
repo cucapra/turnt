@@ -31,6 +31,7 @@ class TestEnv(NamedTuple):
     """The configuration values describing how to treat tests.
     """
     name: Optional[str]
+    default: bool
     command: Optional[str]  # Here, a template to be filled in.
     out_files: Dict[str, str]
     return_code: int
@@ -185,6 +186,7 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
     """
     return TestEnv(
         name=name,
+        default=config_data.get('default', True),
         command=config_data.get('command'),
         out_files=config_data.get('output', {"out": STDOUT}),
         return_code=config_data.get('return_code', 0),
@@ -198,20 +200,27 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
 def get_envs(config_base: dict, names: List[str]) -> Iterator[TestEnv]:
     """List the test environments described in a TOML config file.
 
-    If `names` is empty, include all the environments. Otherwise, only
-    include environments with matching names.
+    If `names` is empty, include all the environments where `default` is
+    set. Otherwise, only include environments with matching names.
     """
     if 'envs' in config_base:
         # It's a multi-environment configuration. Ignore the "root" of
         # the config document and use `envs` exclusively.
-        for name, env in config_base['envs'].items():
+        for name, env_data in config_base['envs'].items():
             if names and name not in names:
                 continue
-            yield get_env(env, name)
+            env = get_env(env_data, name)
+            if not names and not env.default:
+                continue
+            yield env
     else:
         # It's a single-environment configuration.
-        if not names or 'default' in names:
-            yield get_env(config_base)
+        if names and 'default' not in names:
+            return
+        env = get_env(config_base)
+        if not names and not env.default:
+            return
+        yield env
 
 
 def extract_options(text: str, key: str) -> List[str]:
