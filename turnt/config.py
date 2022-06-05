@@ -210,7 +210,8 @@ def get_envs(config_base: dict, names: List[str]) -> Iterator[TestEnv]:
             yield get_env(env, name)
     else:
         # It's a single-environment configuration.
-        yield get_env(config_base)
+        if not names or 'default' in names:
+            yield get_env(config_base)
 
 
 def extract_options(text: str, key: str) -> List[str]:

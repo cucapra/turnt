@@ -205,7 +205,7 @@ These options are useful when working with one specific test file:
 
 These options lets you switch between different test environments:
 
-- `--env` or `-e`: Give the name of a configured [environment](#multiple-environments) to run. Use this multiple times to run multiple environments. By default, Turnt runs all the configured environments for every test.
+- `--env` or `-e`: Give the name of a configured [environment](#multiple-environments) to run. Use this multiple times to run multiple environments. By default, Turnt runs all the configured environments for every test. Use the special name `default` for the top-level, unnamed test environment.
 - `--config` or `-c`: Look for this config filename instead of the default `turnt.toml`.
 
 
