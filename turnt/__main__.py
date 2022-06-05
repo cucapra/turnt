@@ -18,7 +18,7 @@ CONFIG_NAME = 'turnt.toml'
               help='Do not suppress stderr from successful commands.')
 @click.option('-a', '--args',
               help='Override arguments for test commands.')
-@click.option('-j', '--parallel',
+@click.option('-j', '--parallel', is_flag=True,
               help='Run tests in parallel.')
 @click.option('-c', '--config', default=CONFIG_NAME,
               help=f'Name of the config file. Default: {CONFIG_NAME}')
