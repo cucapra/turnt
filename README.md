@@ -145,11 +145,11 @@ a test `foo.t` will look for its stdout snapshot in `foo.out`.
 If the two environments don't match, at least one will fail.
 If you want a more standard (non-differential) setup, just set the `output` configuration differently for the two environments, like this:
 
-    [envs.baseline]
+    [envs.interp]
     command = "interp -g {filename}"
     output.res = "-"
 
-    [envs.optimized]
+    [envs.profile]
     command = "profile {filename}"
     output.prof = "-"
 
