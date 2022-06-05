@@ -118,6 +118,45 @@ Put these things into your test file to override the configuration:
 - `RETURN: <code>` overrides the expected exit status.
 
 
+Multiple Environments
+---------------------
+
+Turnt is mostly about running one command on many input files.
+Sometimes, however, you need to run several commands on each file.
+This can be especially useful for *[differential testing][dt]:*
+when you want to check that multiple things behave the same way by checking that they produce the same input when you give them the same input.
+
+You can create multiple environments in your configuration file under the `envs` table.
+The table maps environment *names* to sets of configuration options that are just like the [top-level configuration described above](#configuring).
+For example:
+
+    [envs.baseline]
+    command = "interp -g {filename}"
+
+    [envs.optimized]
+    command = "compile -O3 {filename} ; ./a.out"
+
+Each environment can have the full complement of configuration options described above:
+for example, `command`, `output`, and `return_code`.
+When you run `turnt` on some files, it will run all the environments on all the files.
+There is also a Boolean `default` flag to turn off an environment by default; that way, you can only use it by asking for it with the `-e` flag (see below).
+
+This example is a differential testing setup because both environments share the same (default) snapshot file:
+a test `foo.t` will look for its stdout snapshot in `foo.out`.
+If the two environments don't match, at least one will fail.
+If you want a more standard (non-differential) setup, just set the `output` configuration differently for the two environments, like this:
+
+    [envs.interp]
+    command = "interp -g {filename}"
+    output.res = "-"
+
+    [envs.profile]
+    command = "profile {filename}"
+    output.prof = "-"
+
+[dt]: https://en.wikipedia.org/wiki/Differential_testing
+
+
 Directory Tests
 ---------------
 
@@ -163,8 +202,9 @@ These options are useful when working with one specific test file:
 - `--print` or `-p`: Instead of checking test results, just run the command and show the output directly. This can be useful (especially in combination with `-v`) when iterating on a test interactively.
 - `--args` or `-a`: Override the `{args}` string in the test command.
 
-This option lets you switch between different test environments:
+These options lets you switch between different test environments:
 
+- `--env` or `-e`: Give the name of a configured [environment](#multiple-environments) to run. Use this multiple times to run multiple environments. By default, Turnt runs all the configured environments for every test. Use the special name `default` for the top-level, unnamed test environment.
 - `--config` or `-c`: Look for this config filename instead of the default `turnt.toml`.
 
 

@@ -24,11 +24,14 @@ class Config(NamedTuple):
     verbose: bool
     dump: bool
     args: Optional[str]
+    envs: List[str]
 
 
 class TestEnv(NamedTuple):
     """The configuration values describing how to treat tests.
     """
+    name: Optional[str]
+    default: bool
     command: Optional[str]  # Here, a template to be filled in.
     out_files: Dict[str, str]
     return_code: int
@@ -41,9 +44,7 @@ class TestEnv(NamedTuple):
 class Test(NamedTuple):
     """The configuration for running a specific test.
     """
-    # About the batch this test belongs to.
-    cfg: Config
-    idx: int
+    env_name: Optional[str]
 
     # The test file and its base directory.
     test_path: str
@@ -180,10 +181,12 @@ def load_config(path: str, config_name: str) -> Tuple[dict, str]:
     return {}, os.path.dirname(os.path.abspath(path))
 
 
-def get_env(config_data: dict) -> TestEnv:
-    """Get the settings from a parsed TOML configuration file.
+def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
+    """Get the settings from a configuration section.
     """
     return TestEnv(
+        name=name,
+        default=config_data.get('default', True),
         command=config_data.get('command'),
         out_files=config_data.get('output', {"out": STDOUT}),
         return_code=config_data.get('return_code', 0),
@@ -192,6 +195,32 @@ def get_env(config_data: dict) -> TestEnv:
         opts_file=config_data.get("opts_file"),
         args='',
     )
+
+
+def get_envs(config_base: dict, names: List[str]) -> Iterator[TestEnv]:
+    """List the test environments described in a TOML config file.
+
+    If `names` is empty, include all the environments where `default` is
+    set. Otherwise, only include environments with matching names.
+    """
+    if 'envs' in config_base:
+        # It's a multi-environment configuration. Ignore the "root" of
+        # the config document and use `envs` exclusively.
+        for name, env_data in config_base['envs'].items():
+            if names and name not in names:
+                continue
+            env = get_env(env_data, name)
+            if not names and not env.default:
+                continue
+            yield env
+    else:
+        # It's a single-environment configuration.
+        if names and 'default' not in names:
+            return
+        env = get_env(config_base)
+        if not names and not env.default:
+            return
+        yield env
 
 
 def extract_options(text: str, key: str) -> List[str]:
@@ -231,39 +260,36 @@ def override_env(env: TestEnv, contents: str) -> TestEnv:
     )
 
 
-def configure_test(cfg: Config, path: str, idx: int) -> Test:
-    """Get the configuration for a specific test.
+def configure_test(cfg: Config, path: str) -> Iterator[Test]:
+    """Get the configurations for a specific test file.
 
     This combines information from the configuration file and options
     embedded in the test file, which can override the former. The path
     need not exist or be a file. If it's a directory or does not exist,
     no options are extracted (and the defaults are used).
-
-    `args` can override the arguments for the command, which otherwise
-    come from the file itself.
     """
     # Load base options from the configuration file.
     config, config_dir = load_config(path, cfg.config_name)
-    env = get_env(config)
 
-    # Load the contents and extract overrides.
-    contents = read_contents(env, path)
-    env = override_env(env, contents)
+    # Configure each environment.
+    for env in get_envs(config, names=cfg.envs):
+        # Load the contents and extract overrides.
+        contents = read_contents(env, path)
+        env = override_env(env, contents)
 
-    # Further override using the global configuration.
-    if cfg.args is not None:
-        env = env._replace(args=cfg.args)
+        # Further override using the global configuration.
+        if cfg.args is not None:
+            env = env._replace(args=cfg.args)
 
-    return Test(
-        cfg=cfg,
-        idx=idx,
-        test_path=path,
-        command=format_command(env, config_dir, path),
-        config_dir=config_dir,
-        out_files=get_out_files(env, path),
-        return_code=env.return_code,
-        diff_cmd=env.diff_cmd,
-    )
+        yield Test(
+            env_name=env.name,
+            test_path=path,
+            command=format_command(env, config_dir, path),
+            config_dir=config_dir,
+            out_files=get_out_files(env, path),
+            return_code=env.return_code,
+            diff_cmd=env.diff_cmd,
+        )
 
 
 def map_outputs(test: Test, stdout: str, stderr: str) -> Test:

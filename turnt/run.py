@@ -7,19 +7,30 @@ import shutil
 import sys
 import contextlib
 from concurrent import futures
-from typing import List, Tuple
+from typing import List, Tuple, Iterator
 from .config import Config, Test, configure_test, map_outputs
 
 
-def check_result(test: Test,
-                 proc: subprocess.CompletedProcess) -> Tuple[bool, List[str]]:
+def tap_line(ok: bool, idx: int, test: Test) -> str:
+    """Format a TAP success/failure line."""
+    return '{} {} - {}{}'.format(
+        'ok' if ok else 'not ok',
+        idx,
+        test.test_path,
+        ' {}'.format(test.env_name) if test.env_name else '',
+    )
+
+
+def check_result(cfg: Config, test: Test,
+                 proc: subprocess.CompletedProcess,
+                 idx: int) -> Tuple[bool, List[str]]:
     """Check the results of a single test and print the outcome.
 
     Return a bool indicating success and a TAP message.
     """
     # If the command has a non-zero exit code, fail.
     if proc.returncode != test.return_code:
-        msg = ['not ok {} - {}'.format(test.idx, test.test_path)]
+        msg = [tap_line(False, idx, test)]
         if test.return_code:
             msg.append('# exit code: {}, expected: {}'.format(
                 proc.returncode, test.return_code,
@@ -36,7 +47,7 @@ def check_result(test: Test,
     missing = []
     for saved_file, output_file in test.out_files.items():
         # Diff the actual & expected output.
-        if test.cfg.diff:
+        if cfg.diff:
             subprocess.run(test.diff_cmd + [saved_file, output_file])
 
         # Read actual & expected output.
@@ -55,17 +66,13 @@ def check_result(test: Test,
             missing.append(saved_file)
 
     # Save the new output, if requested.
-    update = test.cfg.save and differing
+    update = cfg.save and differing
     if update:
         for saved_file, output_file in test.out_files.items():
             shutil.copy(output_file, saved_file)
 
     # Show TAP success line and annotations.
-    line = '{} {} - {}'.format(
-        'ok' if not differing else 'not ok',
-        test.idx,
-        test.test_path,
-    )
+    line = tap_line(not differing, idx, test)
     if update:
         line += ' # skip: updated {}'.format(', '.join(test.out_files.keys()))
 
@@ -78,15 +85,13 @@ def check_result(test: Test,
     return not differing, [line]
 
 
-def run_test(cfg: Config, path: str, idx: int) -> Tuple[bool, List[str]]:
+def run_test(cfg: Config, test: Test, idx: int) -> Tuple[bool, List[str]]:
     """Run a single test.
 
     Check the output and produce a TAP summary line, unless `dump` is
     enabled, in which case we just print the output. Return a bool
     indicating success and the message.
     """
-    test = configure_test(cfg, path, idx)
-
     # Show the command if we're dumping the output.
     if cfg.dump:
         print('$', test.command, file=sys.stderr)
@@ -121,10 +126,17 @@ def run_test(cfg: Config, path: str, idx: int) -> Tuple[bool, List[str]]:
 
             # Supply outputs and check.
             test = map_outputs(test, stdout.name, stderr.name)
-            return check_result(test, proc)
+            return check_result(cfg, test, proc, idx)
         finally:
             os.unlink(stdout.name)
             os.unlink(stderr.name)
+
+
+def load_tests(cfg: Config, paths: List[str]) -> Iterator[Test]:
+    """Load all the tests to perform for each file.
+    """
+    for path in paths:
+        yield from configure_test(cfg, path)
 
 
 def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
@@ -138,7 +150,7 @@ def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
         success = True
         with futures.ThreadPoolExecutor() as pool:
             futs = []
-            for idx, path in enumerate(test_files):
+            for idx, path in enumerate(load_tests(cfg, test_files)):
                 futs.append(pool.submit(
                     run_test,
                     cfg, path, idx + 1
@@ -153,7 +165,7 @@ def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
     else:
         # Simple sequential loop.
         success = True
-        for idx, path in enumerate(test_files):
+        for idx, path in enumerate(load_tests(cfg, test_files)):
             sc, msg = run_test(cfg, path, idx + 1)
             success &= sc
             for line in msg:

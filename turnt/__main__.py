@@ -22,9 +22,12 @@ CONFIG_NAME = 'turnt.toml'
               help='Run tests in parallel.')
 @click.option('-c', '--config', default=CONFIG_NAME,
               help=f'Name of the config file. Default: {CONFIG_NAME}')
+@click.option('-e', '--env', multiple=True,
+              help='The names of configured environment(s) to run.')
 @click.argument('file', nargs=-1, type=click.Path(exists=True))
 def turnt(file: List[str], save: bool, diff: bool, verbose: bool, dump: bool,
-          args: Optional[str], parallel: bool, config: str) -> None:
+          args: Optional[str], parallel: bool, config: str,
+          env: List[str]) -> None:
     cfg = Config(
         config_name=config,
         save=save,
@@ -32,6 +35,7 @@ def turnt(file: List[str], save: bool, diff: bool, verbose: bool, dump: bool,
         verbose=verbose,
         dump=dump,
         args=args,
+        envs=env,
     )
     success = run_tests(cfg, parallel, file)
     sys.exit(0 if success else 1)

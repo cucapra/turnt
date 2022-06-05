@@ -1,0 +1,16 @@
+[envs.one]
+command = "echo env1 >&2 ; echo hi ; cat {filename}"
+
+# This configuration is a "differential testing" pair with the previous one
+# because it shares a single output snapshot file.
+[envs.two]
+command = "echo env2 >&2 ; echo hi ; cat {filename}"
+
+# This one is not because it uses a different file.
+[envs.three]
+command = "echo env3 >&2 ; echo bye ; cat {filename}"
+output.out3 = "-"
+
+[envs.four]
+command = "echo env4 >&2 ; exit 42"  # Intentionally fail.
+default = false
