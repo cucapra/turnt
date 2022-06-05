@@ -118,6 +118,44 @@ Put these things into your test file to override the configuration:
 - `RETURN: <code>` overrides the expected exit status.
 
 
+Multiple Environments
+---------------------
+
+Turnt is mostly about running one command on many input files.
+Sometimes, however, you need to run several commands on each file.
+This can be especially useful for *[differential testing][dt]:*
+when you want to check that multiple things behave the same way by checking that they produce the same input when you give them the same input.
+
+You can create multiple environments in your configuration file under the `envs` table.
+The table maps environment *names* to sets of configuration options that are just like the [top-level configuration described above](#configuring).
+For example:
+
+    [envs.baseline]
+    command = "interp -g {filename}"
+
+    [envs.optimized]
+    command = "compile -O3 {filename} ; ./a.out"
+
+Each environment can have the full complement of configuration options described above:
+for example, `command`, `output`, and `return_code`.
+When you run `turnt` on some files, it will run all the environments on all the files.
+
+This example is a differential testing setup because both environments share the same (default) snapshot file:
+a test `foo.t` will look for its stdout snapshot in `foo.out`.
+If the two environments don't match, at least one will fail.
+If you want a more standard (non-differential) setup, just set the `output` configuration differently for the two environments, like this:
+
+    [envs.baseline]
+    command = "interp -g {filename}"
+    output.res = "-"
+
+    [envs.optimized]
+    command = "profile {filename}"
+    output.prof = "-"
+
+[dt]: https://en.wikipedia.org/wiki/Differential_testing
+
+
 Directory Tests
 ---------------
 
