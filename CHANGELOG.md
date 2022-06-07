@@ -1,8 +1,8 @@
 Turnt Changelog
 ===============
 
-1.8.0 (in development)
-----------------------
+1.8.0 (2022-06-07)
+------------------
 
 - Add support for multiple *test environments* that run different commands on the same file. This is especially useful for differential testing, when multiple commands have the same expected output.
 - Flush the output buffer after every line, which makes streaming TAP consumers more useful.
