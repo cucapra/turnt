@@ -4,6 +4,8 @@ Turnt Changelog
 1.9.0 (in development)
 ----------------------
 
+- `-h` is now an alias for `--help`.
+
 1.8.0 (2022-06-07)
 ------------------
 
