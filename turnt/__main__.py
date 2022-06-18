@@ -5,9 +5,10 @@ from .config import Config
 from .run import run_tests
 
 CONFIG_NAME = 'turnt.toml'
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.command()
+@click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--save', is_flag=True, default=False,
               help='Save new outputs (overwriting old).')
 @click.option('--diff', is_flag=True, default=False,
