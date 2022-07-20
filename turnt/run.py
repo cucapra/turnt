@@ -78,9 +78,13 @@ def check_result(cfg: Config, test: Test,
 
     diff_exist = [fn for fn in differing if fn not in missing]
     if diff_exist:
-        line += '\n# differing: {}'.format(', '.join(diff_exist))
+        line += ' # differing: {}'.format(', '.join(diff_exist))
     if missing:
-        line += '\n# missing: {}'.format(', '.join(missing))
+        if diff_exist:
+            line += '; '
+        else:
+            line += ' # '
+        line += 'missing: {}'.format(', '.join(missing))
 
     return not differing, [line]
 
