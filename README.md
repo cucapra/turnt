@@ -101,6 +101,12 @@ The default behaves like this configuration:
 which captures stdout and saves it in `<test-name>.out`.
 Defining `output` in `turnt.toml` disables this default behavior; you can include it explicitly if you want it alongside other outputs.
 
+### `binary`
+
+By default, Turnt looks inside test files for overrides (see below).
+This won't work if your test inputs are binary (non-text) files (Turnt will warn you and proceed with no overrides).
+Set `binary = true` to suppress this search for overrides altogether.
+
 
 Per-Test Overrides
 ------------------

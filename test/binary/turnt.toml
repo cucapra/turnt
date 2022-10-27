@@ -1,0 +1,2 @@
+command = "echo {base} {args}"
+binary = true
