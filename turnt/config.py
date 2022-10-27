@@ -274,8 +274,12 @@ def configure_test(cfg: Config, path: str) -> Iterator[Test]:
     # Configure each environment.
     for env in get_envs(config, names=cfg.envs):
         # Load the contents and extract overrides.
-        contents = read_contents(env, path)
-        env = override_env(env, contents)
+        try:
+            contents = read_contents(env, path)
+        except UnicodeDecodeError:
+            print(f'{path}: Could not decode text.')
+        else:
+            env = override_env(env, contents)
 
         # Further override using the global configuration.
         if cfg.args is not None:
