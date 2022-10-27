@@ -6,6 +6,7 @@ Turnt Changelog
 
 - `-h` is now an alias for `--help`.
 - `differing` and `missing` notes are now printed on the same line as the test itself, as TAP directives. This should both be easier to read when looking at the TAP output directly, and it should make life a bit simpler for TAP consumers.
+- A new `binary` config option that disables looking with test files for (text) overrides. Even without this flag, binary files no longer crash Turnt altogether and instead merely log an error message.
 
 1.8.0 (2022-06-07)
 ------------------

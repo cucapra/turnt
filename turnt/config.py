@@ -39,6 +39,7 @@ class TestEnv(NamedTuple):
     opts_file: Optional[str]
     diff_cmd: List[str]
     args: str
+    binary: bool
 
 
 class Test(NamedTuple):
@@ -194,6 +195,7 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
         out_base=config_data.get("out_base", "out"),
         opts_file=config_data.get("opts_file"),
         args='',
+        binary=config_data.get('binary', False),
     )
 
 
@@ -274,8 +276,14 @@ def configure_test(cfg: Config, path: str) -> Iterator[Test]:
     # Configure each environment.
     for env in get_envs(config, names=cfg.envs):
         # Load the contents and extract overrides.
-        contents = read_contents(env, path)
-        env = override_env(env, contents)
+        if not env.binary:
+            try:
+                contents = read_contents(env, path)
+            except UnicodeDecodeError:
+                print(f'{path}: Could not decode text. '
+                      'Consider setting `binary=true`.')
+            else:
+                env = override_env(env, contents)
 
         # Further override using the global configuration.
         if cfg.args is not None:
