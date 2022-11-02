@@ -1,8 +1,8 @@
 Turnt Changelog
 ===============
 
-1.9.0 (in development)
-----------------------
+1.9.0 (2022-11-02)
+------------------
 
 - `-h` is now an alias for `--help`.
 - `differing` and `missing` notes are now printed on the same line as the test itself, as TAP directives. This should both be easier to read when looking at the TAP output directly, and it should make life a bit simpler for TAP consumers.
