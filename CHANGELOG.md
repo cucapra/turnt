@@ -1,6 +1,11 @@
 Turnt Changelog
 ===============
 
+1.10.0 (in development)
+-----------------------
+
+- The diff output, when `--diff` is enabled, now goes to stderr instead of stdout. This makes it possible to redirect diffs separately from the test results.
+
 1.9.0 (2022-11-02)
 ------------------
 

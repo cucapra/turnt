@@ -3,4 +3,4 @@ programs.
 """
 from .__main__ import turnt  # noqa
 
-__version__ = '1.9.0'
+__version__ = '1.10.0'
