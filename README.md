@@ -197,6 +197,7 @@ The most common `turnt` command-line options you'll need while running and updat
 
 - `--save`: Bless the current output from each test as the "correct" output, saving it to the output file that you'll want to check into version control.
 - `--diff`: Show diffs between the actual and expected output for each test.
+  (The diff goes to stderr while the [TAP][] results remain on stdout.)
 
 You also might enjoy:
 

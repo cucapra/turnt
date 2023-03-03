@@ -48,7 +48,8 @@ def check_result(cfg: Config, test: Test,
     for saved_file, output_file in test.out_files.items():
         # Diff the actual & expected output.
         if cfg.diff:
-            subprocess.run(test.diff_cmd + [saved_file, output_file])
+            subprocess.run(test.diff_cmd + [saved_file, output_file],
+                           stdout=sys.stderr.buffer)
 
         # Read actual & expected output.
         with open(output_file) as f:
