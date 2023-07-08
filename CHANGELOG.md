@@ -1,6 +1,11 @@
 Turnt Changelog
 ===============
 
+1.11.0 (2023-07-08)
+-------------------
+
+- A new `out_dir` directory tells Turnt where to put its expected output files.
+
 1.10.0 (2023-03-03)
 -------------------
 
