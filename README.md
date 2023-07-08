@@ -107,6 +107,12 @@ By default, Turnt looks inside test files for overrides (see below).
 This won't work if your test inputs are binary (non-text) files (Turnt will warn you and proceed with no overrides).
 Set `binary = true` to suppress this search for overrides altogether.
 
+### `out_dir`
+
+Optionally put expected test outputs in a different directory.
+By default, this is `.`, i.e., expected output files go "next to" test files.
+Set this to a different directory, relative to the test file, to keep them somewhere else.
+
 
 Per-Test Overrides
 ------------------
