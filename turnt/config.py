@@ -36,6 +36,7 @@ class TestEnv(NamedTuple):
     out_files: Dict[str, str]
     return_code: int
     out_base: str
+    out_dir: str
     opts_file: Optional[str]
     diff_cmd: List[str]
     args: str
@@ -115,7 +116,7 @@ def format_output_path(name: str, path: str) -> str:
     )
 
 
-def format_expected_path(ext: str, path: str, out_base: str) -> str:
+def format_expected_path(env: TestEnv, ext: str, path: str) -> str:
     """Get the *expected* output file location for a test environment.
 
     `path` is the path to the test file itself. `ext` is the output
@@ -134,11 +135,14 @@ def format_expected_path(ext: str, path: str, out_base: str) -> str:
     # `out_base`).
     if os.path.isdir(path):
         dirname = path
-        base = out_base
+        base = env.out_base
     else:
         dirname = os.path.dirname(path)
         filename = os.path.basename(path)
         base, _ = os.path.splitext(filename)
+
+    # Optionally put the output files in a different (sub)directory.
+    dirname = os.path.normpath(os.path.join(dirname, env.out_dir))
 
     return os.path.join(dirname, '{}.{}'.format(base, ext))
 
@@ -147,7 +151,7 @@ def get_out_files(env: TestEnv, path: str) -> Dict[str, str]:
     """Get a map from expected to actual output paths for a test.
     """
     return {
-        format_expected_path(k, path, env.out_base):
+        format_expected_path(env, k, path):
         format_output_path(v, path)
         for (k, v) in env.out_files.items()
     }
@@ -200,6 +204,7 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
         return_code=config_data.get('return_code', 0),
         diff_cmd=shlex.split(config_data.get('diff', DIFF_DEFAULT)),
         out_base=config_data.get("out_base", "out"),
+        out_dir=config_data.get("out_dir", "."),
         opts_file=config_data.get("opts_file"),
         args='',
         binary=config_data.get('binary', False),
