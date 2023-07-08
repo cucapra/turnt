@@ -1,0 +1,2 @@
+command = "echo {base} {args} ; cat {filename}"
+out_dir = "expected"
