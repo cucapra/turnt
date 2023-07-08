@@ -93,11 +93,15 @@ def format_command(env: TestEnv, config_dir: str, path: str) -> str:
 
 
 def format_output_path(name: str, path: str) -> str:
-    """Substitute patterns in configured *actual* output filenames and
-    produce a complete path (relative to `path`, which is the test
-    file).
+    """Get the *actual* output path to be collected from a test run.
+
+    This is the path that the command actually writes to, which we will
+    then collect and compare to the expected output. `name` is the
+    configured name; we substitute patterns in it and treat it relative
+    to `path`, which is the test file. `name` could also indicate the
+    stdout or stderr streams, in which case it is left unchanged.
     """
-    if name == STDOUT or name == STDERR:
+    if name in (STDOUT, STDERR):
         return name
 
     filename = os.path.basename(path)
@@ -112,8 +116,10 @@ def format_output_path(name: str, path: str) -> str:
 
 
 def format_expected_path(ext: str, path: str, out_base: str) -> str:
-    """Generate the location to use for the *expected* output file for a
-    given test `path` and output extension key `ext`.
+    """Get the *expected* output file location for a test environment.
+
+    `path` is the path to the test file itself. `ext` is the output
+    extension key for a given environment.
 
     The resulting path is located "next to" the test file, using its
     basename with a different extension---for example `./foo/bar.t`
@@ -138,12 +144,13 @@ def format_expected_path(ext: str, path: str, out_base: str) -> str:
 
 
 def get_out_files(env: TestEnv, path: str) -> Dict[str, str]:
-    """Get the mapping from saved output files to expected output files
-    for the test.
+    """Get a map from expected to actual output paths for a test.
     """
-    return {format_expected_path(k, path, env.out_base):
-            format_output_path(v, path)
-            for (k, v) in env.out_files.items()}
+    return {
+        format_expected_path(k, path, env.out_base):
+        format_output_path(v, path)
+        for (k, v) in env.out_files.items()
+    }
 
 
 def read_contents(env: TestEnv, path: str) -> str:
