@@ -70,7 +70,10 @@ def check_result(cfg: Config, test: Test,
     update = cfg.save and differing
     if update:
         for saved_file, output_file in test.out_files.items():
-            shutil.copy(output_file, saved_file)
+            parent_dir = os.path.dirname(saved_file)
+            if not os.path.isdir(parent_dir):
+                os.makedirs(parent_dir, exist_ok=True)
+            shutil.copyfile(output_file, saved_file)
 
     # Show TAP success line and annotations.
     line = tap_line(not differing, idx, test)
