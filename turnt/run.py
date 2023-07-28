@@ -90,7 +90,13 @@ def check_result(cfg: Config, test: Test,
             line += ' # '
         line += 'missing: {}'.format(', '.join(missing))
 
-    return not differing, [line]
+    # Mark "TODO" tests, i.e., allowed failures.
+    success = not differing
+    if test.todo:
+        line += ' # todo'
+        success = True
+
+    return success, [line]
 
 
 def run_test(cfg: Config, test: Test, idx: int) -> Tuple[bool, List[str]]:

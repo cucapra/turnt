@@ -58,6 +58,7 @@ class Test(NamedTuple):
     out_files: Dict[str, str]
     return_code: int
     diff_cmd: List[str]
+    todo: bool
 
 
 def ancestors(path: str) -> Iterator[str]:
@@ -313,6 +314,7 @@ def configure_test(cfg: Config, path: str) -> Iterator[Test]:
             out_files=get_out_files(env, path),
             return_code=env.return_code,
             diff_cmd=env.diff_cmd,
+            todo=env.todo,
         )
 
 
