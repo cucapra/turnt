@@ -41,6 +41,7 @@ class TestEnv(NamedTuple):
     diff_cmd: List[str]
     args: str
     binary: bool
+    todo: bool
 
 
 class Test(NamedTuple):
@@ -208,6 +209,7 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
         opts_file=config_data.get("opts_file"),
         args='',
         binary=config_data.get('binary', False),
+        todo=config_data.get('todo', False),
     )
 
 
@@ -265,12 +267,14 @@ def override_env(env: TestEnv, contents: str) -> TestEnv:
     outputs = {k: v for k, v in (o.split() for o in output_strs)}
 
     return_code = extract_single_option(contents, 'return')
+    todo = extract_single_option(contents, 'todo')
 
     return env._replace(
         command=extract_single_option(contents, 'cmd') or env.command,
         out_files=outputs or env.out_files,
         args=extract_single_option(contents, 'args') or env.args,
         return_code=int(return_code) if return_code else env.return_code,
+        todo=(todo == 'true') if todo else env.todo,
     )
 
 
