@@ -113,6 +113,12 @@ Optionally put expected test outputs in a different directory.
 By default, this is `.`, i.e., expected output files go "next to" test files.
 Set this to a different directory, relative to the test file, to keep them somewhere else.
 
+### `todo`
+
+Mark a test as an allowed failure.
+You might add a test that exposes a bug that you haven't fixed yet, for example, but you want your CI to stay "green."
+Set `todo = true` to allow the test to fail; Turnt will mark it with `# todo` in the TAP output.
+
 
 Per-Test Overrides
 ------------------
@@ -128,6 +134,7 @@ Put these things into your test file to override the configuration:
 - `OUT: <ext> <filename>` overrides `output` from the configuration.
   You can specify multiple files this way: one line per file.
 - `RETURN: <code>` overrides the expected exit status.
+- `TODO: <true|false>` can mark a test as a "todo" (allowed failure).
 
 
 Multiple Environments
