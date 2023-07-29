@@ -42,6 +42,7 @@ class TestEnv(NamedTuple):
     args: str
     binary: bool
     todo: bool
+    default_tests: List[str]  # A list of glob patterns.
 
 
 class Test(NamedTuple):
@@ -198,6 +199,11 @@ def load_config(path: str, config_name: str) -> Tuple[dict, str]:
 def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
     """Get the settings from a configuration section.
     """
+    # The default test blobs (the `tests` config option) can either be a
+    # single string or a list of strings.
+    tests = config_data.get('tests', [])
+    default_tests = tests if isinstance(tests, list) else [tests]
+
     return TestEnv(
         name=name,
         default=config_data.get('default', True),
@@ -211,6 +217,7 @@ def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
         args='',
         binary=config_data.get('binary', False),
         todo=config_data.get('todo', False),
+        default_tests=default_tests,
     )
 
 
@@ -330,3 +337,14 @@ def map_outputs(test: Test, stdout: str, stderr: str) -> Test:
     out_files = {k: sugar.get(v, v)
                  for (k, v) in test.out_files.items()}
     return test._replace(out_files=out_files)
+
+
+def default_files(cfg: Config):
+    """Get the default set of test files to run.
+
+    This is the set of files listed in `turnt.toml`. We use them if the
+    user doesn't specify any specific tests on the command line.
+    """
+    config, _ = load_config('asdf', cfg.config_name)
+    for env in get_envs(config, names=cfg.envs):
+        yield from env.default_tests
