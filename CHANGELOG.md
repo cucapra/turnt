@@ -1,6 +1,11 @@
 Turnt Changelog
 ===============
 
+1.12.0 (in development)
+-----------------------
+
+- You can now configure `todo` tests to ignore failures.
+
 1.11.0 (2023-07-08)
 -------------------
 
