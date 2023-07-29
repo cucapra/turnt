@@ -75,22 +75,30 @@ def check_result(cfg: Config, test: Test,
                 os.makedirs(parent_dir, exist_ok=True)
             shutil.copyfile(output_file, saved_file)
 
-    # Show TAP success line and annotations.
+    # Show TAP success line with directives.
     line = tap_line(not differing, idx, test)
+    directives = []
     if update:
-        line += ' # skip: updated {}'.format(', '.join(test.out_files.keys()))
+        directives.append(
+            'skip: updated {}'.format(', '.join(test.out_files.keys()))
+        )
+
+    # Mark "TODO" tests, i.e., allowed failures.
+    success = not differing
+    if test.todo:
+        success = True
+        if not update:
+            directives.append('todo')
 
     diff_exist = [fn for fn in differing if fn not in missing]
     if diff_exist:
-        line += ' # differing: {}'.format(', '.join(diff_exist))
+        directives.append('differing: {}'.format(', '.join(diff_exist)))
     if missing:
-        if diff_exist:
-            line += '; '
-        else:
-            line += ' # '
-        line += 'missing: {}'.format(', '.join(missing))
+        directives.append('missing: {}'.format(', '.join(missing)))
 
-    return not differing, [line]
+    if directives:
+        line += ' # ' + '; '.join(directives)
+    return success, [line]
 
 
 def run_test(cfg: Config, test: Test, idx: int) -> Tuple[bool, List[str]]:
