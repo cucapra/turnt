@@ -8,7 +8,7 @@ import sys
 import contextlib
 from concurrent import futures
 from typing import List, Tuple, Iterator
-from .config import Config, Test, configure_test, map_outputs, default_files
+from .config import Config, Test, tests_for_file, map_outputs, default_tests
 
 
 def tap_line(ok: bool, idx: int, test: Test) -> str:
@@ -151,19 +151,19 @@ def run_test(cfg: Config, test: Test, idx: int) -> Tuple[bool, List[str]]:
 def load_tests(cfg: Config, paths: List[str]) -> Iterator[Test]:
     """Load all the tests to perform for each file.
     """
-    for path in paths:
-        yield from configure_test(cfg, path)
+    if paths:
+        for path in paths:
+            yield from tests_for_file(cfg, path)
+    else:
+        # Use the default test file list, if no specific tests are specified.
+        yield from default_tests(cfg)
 
 
 def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
     """Run all the tests in an entire suite, possibly in parallel.
     """
-    # Use the default test file list, if no specific tests are specified.
-    if not test_files:
-        test_files = default_files(cfg)
-
     # The TAP header.
-    if cfg.dump:
+    if not cfg.dump:
         print('1..{}'.format(len(test_files)))
 
     if parallel:

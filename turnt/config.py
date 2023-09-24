@@ -286,43 +286,52 @@ def override_env(env: TestEnv, contents: str) -> TestEnv:
     )
 
 
-def configure_test(cfg: Config, path: str) -> Iterator[Test]:
-    """Get the configurations for a specific test file.
+def make_test(cfg: Config, config_dir: str, env: TestEnv, path: str) -> Test:
+    """Configure a test for a file in a specific environment.
 
     This combines information from the configuration file and options
     embedded in the test file, which can override the former. The path
     need not exist or be a file. If it's a directory or does not exist,
     no options are extracted (and the defaults are used).
     """
+    # Load the contents and extract overrides.
+    if not env.binary:
+        try:
+            contents = read_contents(env, path)
+        except UnicodeDecodeError:
+            print(f'{path}: Could not decode text. '
+                  'Consider setting `binary=true`.')
+        else:
+            env = override_env(env, contents)
+
+    # Further override using the global configuration.
+    if cfg.args is not None:
+        env = env._replace(args=cfg.args)
+
+    return Test(
+        env_name=env.name,
+        test_path=path,
+        command=format_command(env, config_dir, path),
+        config_dir=config_dir,
+        out_files=get_out_files(env, path),
+        return_code=env.return_code,
+        diff_cmd=env.diff_cmd,
+        todo=env.todo,
+    )
+
+
+def tests_for_file(cfg: Config, path: str) -> Iterator[Test]:
+    """Get all the tests for a specific test file.
+
+    If the associated configuration has multiple environments, then a
+    single file will produce one test for each.
+    """
     # Load base options from the configuration file.
     config, config_dir = load_config(path, cfg.config_name)
 
     # Configure each environment.
     for env in get_envs(config, names=cfg.envs):
-        # Load the contents and extract overrides.
-        if not env.binary:
-            try:
-                contents = read_contents(env, path)
-            except UnicodeDecodeError:
-                print(f'{path}: Could not decode text. '
-                      'Consider setting `binary=true`.')
-            else:
-                env = override_env(env, contents)
-
-        # Further override using the global configuration.
-        if cfg.args is not None:
-            env = env._replace(args=cfg.args)
-
-        yield Test(
-            env_name=env.name,
-            test_path=path,
-            command=format_command(env, config_dir, path),
-            config_dir=config_dir,
-            out_files=get_out_files(env, path),
-            return_code=env.return_code,
-            diff_cmd=env.diff_cmd,
-            todo=env.todo,
-        )
+        yield make_test(cfg, config_dir, env, path)
 
 
 def map_outputs(test: Test, stdout: str, stderr: str) -> Test:
@@ -339,12 +348,13 @@ def map_outputs(test: Test, stdout: str, stderr: str) -> Test:
     return test._replace(out_files=out_files)
 
 
-def default_files(cfg: Config):
+def default_tests(cfg: Config) -> Iterator[Test]:
     """Get the default set of test files to run.
 
     This is the set of files listed in `turnt.toml`. We use them if the
     user doesn't specify any specific tests on the command line.
     """
-    config, _ = load_config('asdf', cfg.config_name)
+    config, _ = load_config('XXX', cfg.config_name)  # XXX
     for env in get_envs(config, names=cfg.envs):
-        yield from env.default_tests
+        for test in env.default_tests:
+            yield make_test(cfg, '.', env, test)  # XXX
