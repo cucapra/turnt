@@ -354,7 +354,7 @@ def default_tests(cfg: Config) -> Iterator[Test]:
     This is the set of files listed in `turnt.toml`. We use them if the
     user doesn't specify any specific tests on the command line.
     """
-    config, _ = load_config('XXX', cfg.config_name)  # XXX
+    config, config_path = load_config('dummy', cfg.config_name)
     for env in get_envs(config, names=cfg.envs):
         for test in env.default_tests:
-            yield make_test(cfg, '.', env, test)  # XXX
+            yield make_test(cfg, config_path, env, test)
