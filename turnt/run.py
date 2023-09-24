@@ -162,16 +162,18 @@ def load_tests(cfg: Config, paths: List[str]) -> Iterator[Test]:
 def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
     """Run all the tests in an entire suite, possibly in parallel.
     """
+    tests = list(load_tests(cfg, test_files))
+
     # The TAP header.
     if not cfg.dump:
-        print('1..{}'.format(len(test_files)))
+        print('1..{}'.format(len(tests)))
 
     if parallel:
         # Parallel test execution.
         success = True
         with futures.ThreadPoolExecutor() as pool:
             futs = []
-            for idx, path in enumerate(load_tests(cfg, test_files)):
+            for idx, path in enumerate(tests):
                 futs.append(pool.submit(
                     run_test,
                     cfg, path, idx + 1
@@ -186,7 +188,7 @@ def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
     else:
         # Simple sequential loop.
         success = True
-        for idx, path in enumerate(load_tests(cfg, test_files)):
+        for idx, path in enumerate(tests):
             sc, msg = run_test(cfg, path, idx + 1)
             success &= sc
             for line in msg:
