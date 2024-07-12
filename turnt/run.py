@@ -52,10 +52,10 @@ def check_result(cfg: Config, test: Test,
                            stdout=sys.stderr.buffer)
 
         # Read actual & expected output.
-        with open(output_file) as f:
+        with open(output_file, 'rb') as f:
             actual = f.read()
         if os.path.isfile(saved_file):
-            with open(saved_file) as f:
+            with open(saved_file, 'rb') as f:
                 expected = f.read()
         else:
             expected = None

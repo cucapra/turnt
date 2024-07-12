@@ -1,2 +1,2 @@
-command = "echo {base} {args}"
+command = "cat {filename}"
 binary = true
