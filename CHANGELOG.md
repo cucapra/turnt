@@ -1,8 +1,8 @@
 Turnt Changelog
 ===============
 
-1.12.0 (in development)
------------------------
+1.12.0 (2024-07-12)
+-------------------
 
 - You can now configure `todo` tests to ignore failures.
 - Fix the reported test count when running multiple environments.
