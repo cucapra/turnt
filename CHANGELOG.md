@@ -6,6 +6,7 @@ Turnt Changelog
 
 - You can now configure `todo` tests to ignore failures.
 - Fix the reported test count when running multiple environments.
+- Fix a crash when a test command outputs binary data.
 
 1.11.0 (2023-07-08)
 -------------------
