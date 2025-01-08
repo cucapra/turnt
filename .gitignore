@@ -1,2 +1,3 @@
 dist/
 test/basic/other_file.txt
+__pycache__
