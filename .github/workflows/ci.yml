@@ -37,4 +37,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: TrueBrain/actions-flake8@master
+      - name: ruff check
+        uses: astral-sh/ruff-action@v3
+        with:
+          src: turnt.py
+      - name: ruff format
+        uses: astral-sh/ruff-action@v3
+        with:
+          src: turnt.py
+          args: "format --check --diff"
