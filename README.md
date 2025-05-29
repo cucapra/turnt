@@ -38,17 +38,17 @@ Install
 -------
 
 This is a Python 3 tool.
-Install it with [pip][]:
+Install it with [uv][]:
 
-    $ pip install --user turnt
+    $ uv tool install turnt
 
-Or copy [turnt.py](turnt/__main__.py) directly into your project.
+Or copy [`turnt.py`](turnt.py) directly into your project.
 
 Or, if you want to work on Turnt, you can install [Flit][], clone this repository, and type this to get a "live" installation with a symlink:
 
     $ flit install --symlink --user
 
-[pip]: https://pip.pypa.io/
+[uv]: https://docs.astral.sh/uv/
 [flit]: https://flit.readthedocs.io/
 
 
