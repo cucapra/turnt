@@ -1,6 +1,11 @@
 Turnt Changelog
 ===============
 
+1.13.0 (in development)
+-----------------------
+
+- Turnt is (again) just one Python source file with no dependencies, so it should be easier to use in some contexts.
+
 1.12.0 (2024-07-12)
 -------------------
 
