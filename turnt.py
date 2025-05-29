@@ -1,3 +1,6 @@
+"""Turnt is a simple expect-style testing tool for command-line
+programs.
+"""
 import argparse
 import contextlib
 import os
@@ -10,6 +13,7 @@ import tempfile
 from concurrent import futures
 from typing import NamedTuple, List, Tuple, Dict, Iterator, Optional
 
+__version__ = '1.12.0'
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
