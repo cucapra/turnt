@@ -1,6 +1,7 @@
 """Turnt is a simple expect-style testing tool for command-line
 programs.
 """
+
 import argparse
 import contextlib
 import os
@@ -13,7 +14,7 @@ import tempfile
 from concurrent import futures
 from typing import NamedTuple, List, Tuple, Dict, Iterator, Optional
 
-__version__ = '1.13.0'
+__version__ = "1.13.0"
 
 if sys.version_info[:2] >= (3, 11):
     import tomllib
@@ -21,16 +22,16 @@ else:
     import tomli as tomllib
 
 
-CONFIG_NAME = 'turnt.toml'
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-DIFF_DEFAULT = 'diff --new-file --unified'
-STDOUT = '-'
-STDERR = '2'
+CONFIG_NAME = "turnt.toml"
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+DIFF_DEFAULT = "diff --new-file --unified"
+STDOUT = "-"
+STDERR = "2"
 
 
 class Config(NamedTuple):
-    """The setup for a test run (which consists of many tests).
-    """
+    """The setup for a test run (which consists of many tests)."""
+
     config_name: str
     save: bool
     diff: bool
@@ -41,8 +42,8 @@ class Config(NamedTuple):
 
 
 class TestEnv(NamedTuple):
-    """The configuration values describing how to treat tests.
-    """
+    """The configuration values describing how to treat tests."""
+
     name: Optional[str]
     default: bool
     command: Optional[str]  # Here, a template to be filled in.
@@ -58,8 +59,8 @@ class TestEnv(NamedTuple):
 
 
 class Test(NamedTuple):
-    """The configuration for running a specific test.
-    """
+    """The configuration for running a specific test."""
+
     env_name: Optional[str]
 
     # The test file and its base directory.
@@ -94,8 +95,7 @@ def ancestors(path: str) -> Iterator[str]:
 
 
 def format_command(env: TestEnv, config_dir: str, path: str) -> str:
-    """Get the shell command to run for a given test, as a string.
-    """
+    """Get the shell command to run for a given test, as a string."""
     assert env.command, "no command specified"
 
     # Construct the command.
@@ -127,7 +127,7 @@ def format_output_path(name: str, path: str) -> str:
         name.format(
             filename=filename,
             base=shlex.quote(base),
-        )
+        ),
     )
 
 
@@ -159,15 +159,13 @@ def format_expected_path(env: TestEnv, ext: str, path: str) -> str:
     # Optionally put the output files in a different (sub)directory.
     dirname = os.path.normpath(os.path.join(dirname, env.out_dir))
 
-    return os.path.join(dirname, '{}.{}'.format(base, ext))
+    return os.path.join(dirname, "{}.{}".format(base, ext))
 
 
 def get_out_files(env: TestEnv, path: str) -> Dict[str, str]:
-    """Get a map from expected to actual output paths for a test.
-    """
+    """Get a map from expected to actual output paths for a test."""
     return {
-        format_expected_path(env, k, path):
-        format_output_path(v, path)
+        format_expected_path(env, k, path): format_output_path(v, path)
         for (k, v) in env.out_files.items()
     }
 
@@ -188,9 +186,9 @@ def read_contents(env: TestEnv, path: str) -> str:
                 with open(opts_path) as f:
                     return f.read()
             except IOError:
-                return ''
+                return ""
         else:
-            return ''
+            return ""
 
 
 def load_config(path: str, config_name: str) -> Tuple[dict, str]:
@@ -201,7 +199,7 @@ def load_config(path: str, config_name: str) -> Tuple[dict, str]:
     for dirpath in ancestors(path):
         config_path = os.path.join(dirpath, config_name)
         if os.path.isfile(config_path):
-            with open(config_path, 'rb') as f:
+            with open(config_path, "rb") as f:
                 return tomllib.load(f), dirpath
 
     # No configuration; use defaults and embedded options only.
@@ -209,21 +207,20 @@ def load_config(path: str, config_name: str) -> Tuple[dict, str]:
 
 
 def get_env(config_data: dict, name: Optional[str] = None) -> TestEnv:
-    """Get the settings from a configuration section.
-    """
+    """Get the settings from a configuration section."""
     return TestEnv(
         name=name,
-        default=config_data.get('default', True),
-        command=config_data.get('command'),
-        out_files=config_data.get('output', {"out": STDOUT}),
-        return_code=config_data.get('return_code', 0),
-        diff_cmd=shlex.split(config_data.get('diff', DIFF_DEFAULT)),
+        default=config_data.get("default", True),
+        command=config_data.get("command"),
+        out_files=config_data.get("output", {"out": STDOUT}),
+        return_code=config_data.get("return_code", 0),
+        diff_cmd=shlex.split(config_data.get("diff", DIFF_DEFAULT)),
         out_base=config_data.get("out_base", "out"),
         out_dir=config_data.get("out_dir", "."),
         opts_file=config_data.get("opts_file"),
-        args='',
-        binary=config_data.get('binary', False),
-        todo=config_data.get('todo', False),
+        args="",
+        binary=config_data.get("binary", False),
+        todo=config_data.get("todo", False),
     )
 
 
@@ -233,10 +230,10 @@ def get_envs(config_base: dict, names: List[str]) -> Iterator[TestEnv]:
     If `names` is empty, include all the environments where `default` is
     set. Otherwise, only include environments with matching names.
     """
-    if 'envs' in config_base:
+    if "envs" in config_base:
         # It's a multi-environment configuration. Ignore the "root" of
         # the config document and use `envs` exclusively.
-        for name, env_data in config_base['envs'].items():
+        for name, env_data in config_base["envs"].items():
             if names and name not in names:
                 continue
             env = get_env(env_data, name)
@@ -245,7 +242,7 @@ def get_envs(config_base: dict, names: List[str]) -> Iterator[TestEnv]:
             yield env
     else:
         # It's a single-environment configuration.
-        if names and 'default' not in names:
+        if names and "default" not in names:
             return
         env = get_env(config_base)
         if not names and not env.default:
@@ -260,7 +257,7 @@ def extract_options(text: str, key: str) -> List[str]:
     occur anywhere in the file. We take all the text after "KEY: " until
     the end of the line. Return the value strings as a list.
     """
-    regex = r'\b{}:\s+(.*)'.format(key.upper())
+    regex = r"\b{}:\s+(.*)".format(key.upper())
     return re.findall(regex, text)
 
 
@@ -275,20 +272,19 @@ def extract_single_option(text: str, key: str) -> Optional[str]:
 
 
 def override_env(env: TestEnv, contents: str) -> TestEnv:
-    """Update a test environment using options embedded in a test file.
-    """
-    output_strs = extract_options(contents, 'out')
+    """Update a test environment using options embedded in a test file."""
+    output_strs = extract_options(contents, "out")
     outputs = {k: v for k, v in (o.split() for o in output_strs)}
 
-    return_code = extract_single_option(contents, 'return')
-    todo = extract_single_option(contents, 'todo')
+    return_code = extract_single_option(contents, "return")
+    todo = extract_single_option(contents, "todo")
 
     return env._replace(
-        command=extract_single_option(contents, 'cmd') or env.command,
+        command=extract_single_option(contents, "cmd") or env.command,
         out_files=outputs or env.out_files,
-        args=extract_single_option(contents, 'args') or env.args,
+        args=extract_single_option(contents, "args") or env.args,
         return_code=int(return_code) if return_code else env.return_code,
-        todo=(todo == 'true') if todo else env.todo,
+        todo=(todo == "true") if todo else env.todo,
     )
 
 
@@ -310,8 +306,7 @@ def configure_test(cfg: Config, path: str) -> Iterator[Test]:
             try:
                 contents = read_contents(env, path)
             except UnicodeDecodeError:
-                print(f'{path}: Could not decode text. '
-                      'Consider setting `binary=true`.')
+                print(f"{path}: Could not decode text. Consider setting `binary=true`.")
             else:
                 env = override_env(env, contents)
 
@@ -340,24 +335,23 @@ def map_outputs(test: Test, stdout: str, stderr: str) -> Test:
     after the test runs.
     """
     sugar = {STDOUT: stdout, STDERR: stderr}
-    out_files = {k: sugar.get(v, v)
-                 for (k, v) in test.out_files.items()}
+    out_files = {k: sugar.get(v, v) for (k, v) in test.out_files.items()}
     return test._replace(out_files=out_files)
 
 
 def tap_line(ok: bool, idx: int, test: Test) -> str:
     """Format a TAP success/failure line."""
-    return '{} {} - {}{}'.format(
-        'ok' if ok else 'not ok',
+    return "{} {} - {}{}".format(
+        "ok" if ok else "not ok",
         idx,
         test.test_path,
-        ' {}'.format(test.env_name) if test.env_name else '',
+        " {}".format(test.env_name) if test.env_name else "",
     )
 
 
-def check_result(cfg: Config, test: Test,
-                 proc: subprocess.CompletedProcess,
-                 idx: int) -> Tuple[bool, List[str]]:
+def check_result(
+    cfg: Config, test: Test, proc: subprocess.CompletedProcess, idx: int
+) -> Tuple[bool, List[str]]:
     """Check the results of a single test and print the outcome.
 
     Return a bool indicating success and a TAP message.
@@ -366,11 +360,14 @@ def check_result(cfg: Config, test: Test,
     if proc.returncode != test.return_code:
         msg = [tap_line(False, idx, test)]
         if test.return_code:
-            msg.append('# exit code: {}, expected: {}'.format(
-                proc.returncode, test.return_code,
-            ))
+            msg.append(
+                "# exit code: {}, expected: {}".format(
+                    proc.returncode,
+                    test.return_code,
+                )
+            )
         else:
-            msg.append('# exit code: {}'.format(proc.returncode))
+            msg.append("# exit code: {}".format(proc.returncode))
         if proc.stderr:
             sys.stderr.buffer.write(proc.stderr)
             sys.stderr.buffer.flush()
@@ -382,14 +379,15 @@ def check_result(cfg: Config, test: Test,
     for saved_file, output_file in test.out_files.items():
         # Diff the actual & expected output.
         if cfg.diff:
-            subprocess.run(test.diff_cmd + [saved_file, output_file],
-                           stdout=sys.stderr.buffer)
+            subprocess.run(
+                test.diff_cmd + [saved_file, output_file], stdout=sys.stderr.buffer
+            )
 
         # Read actual & expected output.
-        with open(output_file, 'rb') as f:
+        with open(output_file, "rb") as f:
             actual = f.read()
         if os.path.isfile(saved_file):
-            with open(saved_file, 'rb') as f:
+            with open(saved_file, "rb") as f:
                 expected = f.read()
         else:
             expected = None
@@ -413,25 +411,23 @@ def check_result(cfg: Config, test: Test,
     line = tap_line(not differing, idx, test)
     directives = []
     if update:
-        directives.append(
-            'skip: updated {}'.format(', '.join(test.out_files.keys()))
-        )
+        directives.append("skip: updated {}".format(", ".join(test.out_files.keys())))
 
     # Mark "TODO" tests, i.e., allowed failures.
     success = not differing
     if test.todo:
         success = True
         if not update:
-            directives.append('todo')
+            directives.append("todo")
 
     diff_exist = [fn for fn in differing if fn not in missing]
     if diff_exist:
-        directives.append('differing: {}'.format(', '.join(diff_exist)))
+        directives.append("differing: {}".format(", ".join(diff_exist)))
     if missing:
-        directives.append('missing: {}'.format(', '.join(missing)))
+        directives.append("missing: {}".format(", ".join(missing)))
 
     if directives:
-        line += ' # ' + '; '.join(directives)
+        line += " # " + "; ".join(directives)
     return success, [line]
 
 
@@ -444,7 +440,7 @@ def run_test(cfg: Config, test: Test, idx: int) -> Tuple[bool, List[str]]:
     """
     # Show the command if we're dumping the output.
     if cfg.dump:
-        print('$', test.command, file=sys.stderr)
+        print("$", test.command, file=sys.stderr)
 
     with contextlib.ExitStack() as stack:
         # Possibly use a temporary file for the output.
@@ -483,18 +479,16 @@ def run_test(cfg: Config, test: Test, idx: int) -> Tuple[bool, List[str]]:
 
 
 def load_tests(cfg: Config, paths: List[str]) -> Iterator[Test]:
-    """Load all the tests to perform for each file.
-    """
+    """Load all the tests to perform for each file."""
     for path in paths:
         yield from configure_test(cfg, path)
 
 
 def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
-    """Run all the tests in an entire suite, possibly in parallel.
-    """
+    """Run all the tests in an entire suite, possibly in parallel."""
     tests = list(load_tests(cfg, test_files))
     if test_files and not cfg.dump:
-        print('1..{}'.format(len(tests)))
+        print("1..{}".format(len(tests)))
 
     if parallel:
         # Parallel test execution.
@@ -502,10 +496,7 @@ def run_tests(cfg: Config, parallel: bool, test_files: List[str]) -> bool:
         with futures.ThreadPoolExecutor() as pool:
             futs = []
             for idx, path in enumerate(tests):
-                futs.append(pool.submit(
-                    run_test,
-                    cfg, path, idx + 1
-                ))
+                futs.append(pool.submit(run_test, cfg, path, idx + 1))
             for fut in futs:
                 sc, msg = fut.result()
                 success &= sc
@@ -599,5 +590,5 @@ def turnt() -> None:
     sys.exit(0 if success else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     turnt()
