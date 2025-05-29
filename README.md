@@ -42,6 +42,8 @@ Install it with [pip][]:
 
     $ pip install --user turnt
 
+Or copy [turnt.py](turnt/__main__.py) directly into your project.
+
 Or, if you want to work on Turnt, you can install [Flit][], clone this repository, and type this to get a "live" installation with a symlink:
 
     $ flit install --symlink --user
