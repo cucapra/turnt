@@ -17,6 +17,6 @@ requires = [
 turnt = "turnt:turnt"
 
 [tool.mypy]
-files = ["turnt"]
+files = ["turnt.py"]
 disallow_untyped_calls = true
 disallow_untyped_defs = true
